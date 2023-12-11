@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 
+	"github.com/StatelyCloud/go-sdk/common/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
 	// This import installs the vtproto grpc codec.
-	"github.com/StatelyCloud/go-sdk/common/auth"
 	_ "github.com/StatelyCloud/stately/gocommon/sgrpc/vtproto"
 )
 
