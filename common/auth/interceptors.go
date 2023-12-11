@@ -7,9 +7,6 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcMetadata "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
-	// This import installs the vtproto grpc codec.
-	_ "github.com/StatelyCloud/stately/gocommon/sgrpc/vtproto"
 )
 
 // WithOAuthRefreshUnaryInterceptor returns a dial option that will automatically authenticate

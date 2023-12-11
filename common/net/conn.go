@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	// This import installs the vtproto grpc codec.
-	_ "github.com/StatelyCloud/stately/gocommon/sgrpc/vtproto"
+	_ "github.com/StatelyCloud/go-sdk/common/net/vtproto"
 )
 
 const (

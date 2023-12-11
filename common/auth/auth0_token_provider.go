@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/StatelyCloud/stately/gocommon/srand"
+	timeComm "github.com/StatelyCloud/go-sdk/common/time"
 )
 
 type authRequest struct {
@@ -194,7 +194,7 @@ func (p *auth0TokenProvider) refreshAccessTokenImpl(ctx context.Context) (string
 	// TODO - make this configurable
 	go func() {
 		// refresh auth between 2 and 5 sec before its required
-		jitter, err := srand.Jitter(time.Second*2, time.Second*5)
+		jitter, err := timeComm.Jitter(time.Second*2, time.Second*5)
 		if err != nil {
 			// if the jitter generator fails just use 5sec
 			jitter = time.Second * 5

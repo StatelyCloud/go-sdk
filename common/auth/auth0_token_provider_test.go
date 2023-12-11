@@ -12,11 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/StatelyCloud/go-sdk/common/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/StatelyCloud/go-sdk/common/auth"
-	"github.com/StatelyCloud/stately/gocommon/stypes"
 )
 
 func TestGetToken(t *testing.T) {
@@ -85,7 +83,8 @@ func TestConcurrentRefresh(t *testing.T) {
 }
 
 func TestRefreshExpiryScheduler(t *testing.T) {
-	returnVal := stypes.AtomicValueOf("test-token")
+	returnVal := atomic.Value{}
+	returnVal.Store("test-token")
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// send a response
 		w.Header().Set("Content-Type", "application/json")
