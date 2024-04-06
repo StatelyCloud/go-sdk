@@ -18,6 +18,7 @@ import (
 )
 
 func TestGetToken(t *testing.T) {
+	t.Parallel()
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// read the body into a map of interfaces
 		body, err := io.ReadAll(r.Body)
@@ -38,12 +39,19 @@ func TestGetToken(t *testing.T) {
 	}))
 
 	// call GetAccessToken()
-	p := auth.NewAuth0TokenProvider(
+	p, err := auth.NewAuthTokenProvider(
 		context.TODO(),
-		"client-id",
-		"client-secret",
-		auth.WithAudience("test-aud"), auth.WithDomain(svr.URL),
+		&auth.Options{
+			Credentials: &auth.Credentials{
+				ClientID:     "client-id",
+				ClientSecret: "client-secret",
+			},
+			Audience: "test-aud",
+			Domain:   svr.URL,
+		},
 	)
+	require.NoError(t, err)
+
 	token, err := p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
@@ -56,8 +64,9 @@ func TestGetToken(t *testing.T) {
 }
 
 func TestConcurrentRefresh(t *testing.T) {
+	t.Parallel()
 	count := atomic.Uint64{}
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// make the handler take a long time so that the requests back up
 		time.Sleep(time.Millisecond * 100)
 		w.Header().Set("Content-Type", "application/json")
@@ -67,7 +76,18 @@ func TestConcurrentRefresh(t *testing.T) {
 		count.Add(1)
 	}))
 
-	p := auth.NewAuth0TokenProvider(context.TODO(), "", "", auth.WithDomain(svr.URL))
+	p, err := auth.NewAuthTokenProvider(
+		context.TODO(),
+		&auth.Options{
+			Credentials: &auth.Credentials{
+				ClientID:     "test-id",
+				ClientSecret: "test-secret",
+			},
+			Domain: svr.URL,
+		},
+	)
+	require.NoError(t, err)
+
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 10; i++ {
 		wg.Add(1)
@@ -83,9 +103,10 @@ func TestConcurrentRefresh(t *testing.T) {
 }
 
 func TestRefreshExpiryScheduler(t *testing.T) {
+	t.Parallel()
 	returnVal := atomic.Value{}
 	returnVal.Store("test-token")
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// send a response
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
@@ -95,7 +116,18 @@ func TestRefreshExpiryScheduler(t *testing.T) {
 	defer svr.Close()
 
 	// call GetAccessToken()
-	p := auth.NewAuth0TokenProvider(context.TODO(), "", "", auth.WithDomain(svr.URL))
+	p, err := auth.NewAuthTokenProvider(
+		context.TODO(),
+		&auth.Options{
+			Credentials: &auth.Credentials{
+				ClientID:     "test-id",
+				ClientSecret: "test-secret",
+			},
+			Domain: svr.URL,
+		},
+	)
+	require.NoError(t, err)
+
 	token, err := p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
@@ -111,7 +143,8 @@ func TestRefreshExpiryScheduler(t *testing.T) {
 }
 
 func TestRefreshContextCancelled(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	t.Parallel()
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// send a response
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
@@ -124,7 +157,18 @@ func TestRefreshContextCancelled(t *testing.T) {
 	cancel()
 
 	// call GetAccessToken()
-	p := auth.NewAuth0TokenProvider(ctx, "", "", auth.WithDomain(svr.URL))
+	p, err := auth.NewAuthTokenProvider(
+		ctx,
+		&auth.Options{
+			Credentials: &auth.Credentials{
+				ClientID:     "test-id",
+				ClientSecret: "test-secret",
+			},
+			Domain: svr.URL,
+		},
+	)
+	require.NoError(t, err)
+
 	token, err := p.GetAccessToken(ctx)
 	assert.Equal(t, "", token)
 	assert.NotNil(t, err)

@@ -1,53 +1,44 @@
 package auth
 
 import (
-	"context"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	grpcMetadata "google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+	"net/http"
 )
 
-// WithOAuthRefreshUnaryInterceptor returns a dial option that will automatically authenticate
-// using the given token provider and attach bearer tokens to outgoing requests.
-// Requests that fail with Unauthenticated will have their token refreshed and then be retried
-// once before propagating the error.
-func WithOAuthRefreshUnaryInterceptor(tokenProvider TokenProvider) grpc.DialOption {
-	return grpc.WithUnaryInterceptor(
-		func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			token, err := tokenProvider.GetAccessToken(ctx)
-			if err != nil {
-				return err
-			}
-			ctxWithAuth := grpcMetadata.AppendToOutgoingContext(
-				ctx,
-				"authorization",
-				"Bearer "+token,
-			)
-
-			// Attempt RPC.
-
-			err = invoker(ctxWithAuth, method, req, reply, cc, opts...)
-
-			// If the RPC failed due to auth, attempt to refresh the access token and retry once.
-			replyStatus, _ := status.FromError(err)
-			if replyStatus.Code() == codes.Unauthenticated {
-				token, err_ := tokenProvider.RefreshAccessToken(ctx, true)
-				if err_ != nil {
-					return err_
-				}
-				ctxWithAuth = grpcMetadata.AppendToOutgoingContext(
-					ctx,
-					"authorization",
-					"Bearer "+token,
-				)
-				err = invoker(ctxWithAuth, method, req, reply, cc, opts...)
-			}
-
-			return err
-		},
-	)
+// WrapTransportWithAuthTokenMiddleware adds an HTTP middleware that will
+// automatically retrieve valid access tokens and attach them to outgoing
+// requests.
+func WrapTransportWithAuthTokenMiddleware(tokenProvider TokenProvider, next http.RoundTripper) http.RoundTripper {
+	return &httpAuthMiddleware{
+		tokenProvider: tokenProvider,
+		next:          next,
+	}
 }
 
-// TODO - add a stream interceptor
+type httpAuthMiddleware struct {
+	tokenProvider TokenProvider
+	next          http.RoundTripper
+}
+
+var _ http.RoundTripper = &httpAuthMiddleware{}
+
+func (m *httpAuthMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
+	token, err := m.tokenProvider.GetAccessToken(req.Context())
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := m.next.RoundTrip(req)
+
+	// If the RPC failed due to auth, attempt to refresh the access token and retry once.
+	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+		token, err = m.tokenProvider.RefreshAccessToken(req.Context(), true)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err = m.next.RoundTrip(req)
+	}
+
+	return resp, err
+}
