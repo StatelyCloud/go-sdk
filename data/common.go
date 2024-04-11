@@ -129,6 +129,9 @@ func dataToProto(data any) (*parsedData[*structpb.Struct], []byte, error) {
 // The type of your object is the string representation of the type, e.g. "user", "todo", etc.
 // Example: /list-todo/task-4 your type is "task".
 func UnmarshalItem[T any](itemType string, rawItem *RawItem) (*Item[T], error) {
+	if rawItem == nil {
+		return nil, nil
+	}
 	if rawItem.ItemType != itemType {
 		return nil, nil
 	}

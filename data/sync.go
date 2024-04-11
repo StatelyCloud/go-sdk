@@ -63,8 +63,8 @@ func (r *Reset) IsSyncResponse() {}
 //	}
 //	err, token := iter.Token()
 //	// handle error and token
-func (s *store) SyncList(ctx context.Context, token []byte) (ListResponse[SyncResponse], error) {
-	resp, err := s.client.SyncList(ctx, connect.NewRequest(&pb.SyncListRequest{
+func (c *dataClient) SyncList(ctx context.Context, token []byte) (ListResponse[SyncResponse], error) {
+	resp, err := c.client.SyncList(ctx, connect.NewRequest(&pb.SyncListRequest{
 		TokenData: token,
 	}))
 	if err != nil {

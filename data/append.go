@@ -7,15 +7,9 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/StatelyCloud/go-sdk/common/types"
+	"github.com/StatelyCloud/go-sdk/internal"
 	pb "github.com/StatelyCloud/go-sdk/pb/data"
 )
-
-// AppendOptions is only used for single item APIs as an optional last argument.
-type AppendOptions struct {
-	// IDAssignment allows you to specify an ID generate strategy. See AppendIDAssignment for all options.
-	IDAssignment AppendIDAssignment
-}
 
 // Append adds one Item to a parent path, automatically assigning
 // an ID via one of several selectable ID generation strategies (not all
@@ -26,19 +20,19 @@ type AppendOptions struct {
 // items where you do not want to assign IDs yourself. The assigned IDs will
 // be returned in the response. This operation will fail if the caller does
 // not have permission to create Items.
-func (s *store) Append(
+func (c *dataClient) Append(
 	ctx context.Context,
 	parentPath string,
 	itemType string,
+	idAssignment AppendIDAssignment,
 	data any,
-	opts AppendOptions,
 ) (*RawItem, error) {
-	responses, err := s.AppendBatch(ctx, AppendBatchRequest{
+	responses, err := c.AppendBatch(ctx, AppendBatchRequest{
 		AppendRequests: []*AppendRequest{
 			{
 				ItemType:     itemType,
 				Data:         data,
-				IDAssignment: opts.IDAssignment,
+				IDAssignment: idAssignment,
 			},
 		},
 		ParentPath: parentPath,
@@ -89,7 +83,7 @@ type AppendBatchResponse struct {
 // items where you do not want to assign IDs yourself. The assigned IDs will
 // be returned in the response. This operation will fail if the caller does
 // not have permission to create Items.
-func (s *store) AppendBatch(
+func (c *dataClient) AppendBatch(
 	ctx context.Context,
 	batchRequest AppendBatchRequest,
 ) ([]*AppendBatchResponse, error) {
@@ -99,8 +93,8 @@ func (s *store) AppendBatch(
 		return nil, err
 	}
 
-	response, err := s.client.Append(ctx, connect.NewRequest(&pb.AppendRequest{
-		StoreId:    uint64(s.storeID),
+	response, err := c.client.Append(ctx, connect.NewRequest(&pb.AppendRequest{
+		StoreId:    uint64(c.storeID),
 		ParentPath: batchRequest.ParentPath,
 		Appends:    appendItems,
 		Atomic:     bool(batchRequest.Atomic),
@@ -128,7 +122,7 @@ func mapAppendResponses(
 		if err := v.GetError(); err != nil {
 			responses[i] = &AppendBatchResponse{
 				RawItem: item, // this item is partially filled but might be useful for debugging?
-				Error:   types.MapProtoError(err),
+				Error:   internal.MapProtoError(err),
 			}
 			continue
 		}

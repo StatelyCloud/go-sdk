@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/StatelyCloud/go-sdk/common/types"
+	"github.com/StatelyCloud/go-sdk/internal"
 	pb "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
@@ -34,8 +34,8 @@ func NewDeleteRequest(itemPaths ...string) DeleteRequest {
 
 // Delete is a convenience method for removing a single Item from the Store by its full key path.
 // See DeleteBatch for more information.
-func (s *store) Delete(ctx context.Context, itemPath string) error {
-	deletes, err := s.DeleteBatch(ctx, DeleteRequest{
+func (c *dataClient) Delete(ctx context.Context, itemPath string) error {
+	deletes, err := c.DeleteBatch(ctx, DeleteRequest{
 		ItemPaths: []string{itemPath},
 	})
 	if err != nil {
@@ -50,9 +50,9 @@ func (s *store) Delete(ctx context.Context, itemPath string) error {
 // to delete Items. Tombstones will be left for deleted items for some
 // predetermined time (TBD tombstone behavior). All deletes in the request are
 // applied atomically - there are no partial successes.
-func (s *store) DeleteBatch(ctx context.Context, request DeleteRequest) ([]*DeleteResponse, error) {
-	resp, err := s.client.Delete(ctx, connect.NewRequest(&pb.DeleteRequest{
-		StoreId: uint64(s.storeID),
+func (c *dataClient) DeleteBatch(ctx context.Context, request DeleteRequest) ([]*DeleteResponse, error) {
+	resp, err := c.client.Delete(ctx, connect.NewRequest(&pb.DeleteRequest{
+		StoreId: uint64(c.storeID),
 		Deletes: mapDeleteRequest(request.ItemPaths),
 		Atomic:  bool(request.Atomic),
 	}))
@@ -68,7 +68,7 @@ func mapDeleteResponse(results []*pb.DeleteResult) []*DeleteResponse {
 	for idx, result := range results {
 		deleteResponses[idx] = &DeleteResponse{
 			KeyPath: result.GetKeyPath(),
-			Error:   types.MapProtoError(result.GetError()),
+			Error:   internal.MapProtoError(result.GetError()),
 		}
 	}
 	return deleteResponses

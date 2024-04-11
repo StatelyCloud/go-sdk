@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/StatelyCloud/go-sdk/common/types"
+	"github.com/StatelyCloud/go-sdk/internal"
 	pb "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
@@ -29,8 +29,8 @@ type PutData struct {
 // successes. Data can be provided as a struct that can be
 // marshalled/unmarshalled as JSON, or a struct that can be
 // serialized/deserialized as a proto.
-func (s *store) Put(ctx context.Context, path string, value any) (*RawItem, error) {
-	responses, err := s.PutBatch(ctx, PutBatchRequest{
+func (c *dataClient) Put(ctx context.Context, path string, value any) (*RawItem, error) {
+	responses, err := c.PutBatch(ctx, PutBatchRequest{
 		PutData: []*PutData{
 			{
 				KeyPath: path,
@@ -80,14 +80,14 @@ type PutBatchResponse struct {
 // All puts in the request are applied atomically - there are no partial
 // successes. Data can be provided as either JSON, or as a proto encoded by a
 // previously agreed upon schema, or by some combination of the two.
-func (s *store) PutBatch(ctx context.Context, batchRequest PutBatchRequest) ([]*PutBatchResponse, error) {
+func (c *dataClient) PutBatch(ctx context.Context, batchRequest PutBatchRequest) ([]*PutBatchResponse, error) {
 	putItems, originalItems, err := mapPutRequest(batchRequest.PutData)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.client.Put(ctx, connect.NewRequest(&pb.PutRequest{
-		StoreId: uint64(s.storeID),
+	resp, err := c.client.Put(ctx, connect.NewRequest(&pb.PutRequest{
+		StoreId: uint64(c.storeID),
 		Puts:    putItems,
 		Atomic:  bool(batchRequest.Atomic),
 	}))
@@ -139,7 +139,7 @@ func mapPutResponses(results []*pb.PutResult, originalItems []*parsedData[*struc
 
 		// Handle err first
 		if err := result.GetError(); err != nil {
-			responses[idx] = &PutBatchResponse{Error: types.MapProtoError(err)}
+			responses[idx] = &PutBatchResponse{Error: internal.MapProtoError(err)}
 			continue
 		}
 

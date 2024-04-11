@@ -6,18 +6,17 @@ import (
 	"connectrpc.com/connect"
 	"github.com/planetscale/vtprotobuf/codec/grpc"
 
-	"github.com/StatelyCloud/go-sdk/common/client"
-	"github.com/StatelyCloud/go-sdk/common/identifiers"
+	"github.com/StatelyCloud/go-sdk/client"
 	"github.com/StatelyCloud/go-sdk/pb/data/dataconnect"
 )
 
-type store struct {
+type dataClient struct {
 	client  dataconnect.DataClient
-	storeID identifiers.StoreID
+	storeID client.StoreID
 }
 
-// Store is a stately data client that interacts with the given store.
-type Store interface {
+// Client is a stately data client that interacts with the given store.
+type Client interface {
 	// GetBatch retrieves one or more Items by their full key paths. This will return any
 	// of the Items that exist. It will fail if not all of the GetItem requests are
 	// under the same root item path, or if the caller does not have permission to
@@ -78,7 +77,12 @@ type Store interface {
 	// items where you do not want to assign IDs yourself. The assigned ID will
 	// be returned in the response. This operation will fail if the caller does
 	// not have permission to create Items.
-	Append(ctx context.Context, parentPath, itemType string, data any, opts AppendOptions) (*RawItem, error)
+	Append(
+		ctx context.Context,
+		parentPath, itemType string,
+		idAssignment AppendIDAssignment,
+		data any,
+	) (*RawItem, error)
 
 	// DeleteBatch removes one or more Items from the Store by their full key paths. This
 	// will fail if any Item does not exist, if not all of the DeleteItem requests
@@ -200,14 +204,18 @@ type Transaction interface {
 type TransactionHandler func(Transaction) error
 
 // NewClient creates a new client with the given store and options.
-func NewClient(appCtx context.Context, storeID identifiers.StoreID, options *client.Options) (Store, error) {
-	options, err := options.ApplyDefaults(appCtx)
+func NewClient(appCtx context.Context, storeID client.StoreID, options ...*client.Options) (Client, error) {
+	opts := &client.Options{}
+	for _, o := range options {
+		opts = opts.Merge(o)
+	}
+	opts, err := opts.ApplyDefaults(appCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &store{
-		client:  dataconnect.NewDataClient(options.HTTPClient(), options.Endpoint, connect.WithCodec(grpc.Codec{})),
+	return &dataClient{
+		client:  dataconnect.NewDataClient(opts.HTTPClient(), opts.Endpoint, connect.WithCodec(grpc.Codec{})),
 		storeID: storeID,
 	}, nil
 }

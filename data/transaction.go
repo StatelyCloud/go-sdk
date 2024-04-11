@@ -10,15 +10,15 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/StatelyCloud/go-sdk/common/identifiers"
+	"github.com/StatelyCloud/go-sdk/client"
 	pb "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // NewTransaction starts a transaction and then hands transaction to your handler to preform all the logic necessary.
 // If the handler returns an error, the transaction will be aborted. If the handler returns nil, the transaction will be committed.
-func (s *store) NewTransaction(ctx context.Context, handler TransactionHandler) (*TransactionResults, error) {
+func (c *dataClient) NewTransaction(ctx context.Context, handler TransactionHandler) (*TransactionResults, error) {
 	// Create a new transaction stream
-	txn := &transaction{stream: s.client.Transaction(ctx)}
+	txn := &transaction{stream: c.client.Transaction(ctx)}
 	defer func(txn *transaction) {
 		// After we're done with the entire txn, close out the stream.
 		// Do we want to bubble up errors closing out the stream?
@@ -26,7 +26,7 @@ func (s *store) NewTransaction(ctx context.Context, handler TransactionHandler) 
 	}(txn)
 
 	// begin the transaction and hand it to the handler
-	if err := txn.begin(s.storeID); err != nil {
+	if err := txn.begin(c.storeID); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ type transaction struct {
 	appendRequests []*parsedData[*structpb.Struct]
 }
 
-func (t *transaction) begin(id identifiers.StoreID) error {
+func (t *transaction) begin(id client.StoreID) error {
 	return t.stream.Send(t.newTXNReq(&pb.TransactionRequest_Begin{
 		Begin: &pb.TransactionBegin{StoreId: uint64(id)},
 	}))

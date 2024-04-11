@@ -22,8 +22,8 @@ To use the client from a Go application:
 
 ```go
 import (
-  "github.com/StatelyCloud/go-sdk/db/data"
-	"github.com/StatelyCloud/go-sdk/common/client"
+  "github.com/StatelyCloud/go-sdk/data"
+  "github.com/StatelyCloud/go-sdk/client"
 )
 
 ctx := context.Background() // TODO: Use a real context please

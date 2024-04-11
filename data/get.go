@@ -45,13 +45,13 @@ func NewGetRequest(itemPaths ...string) GetRequest {
 
 // Get is a convenience method for retrieving a single Item by its full key path.
 // See GetBatch for more information.
-func (s *store) Get(ctx context.Context, itemPath string, option ...GetOptions) (*RawItem, error) {
+func (c *dataClient) Get(ctx context.Context, itemPath string, option ...GetOptions) (*RawItem, error) {
 	opts := GetOptions{}
 	if len(option) > 0 {
 		opts.AllowStale = option[0].AllowStale
 	}
 
-	items, err := s.GetBatch(ctx, GetRequest{
+	items, err := c.GetBatch(ctx, GetRequest{
 		ItemPaths:  []string{itemPath},
 		AllowStale: opts.AllowStale,
 	})
@@ -69,9 +69,9 @@ func (s *store) Get(ctx context.Context, itemPath string, option ...GetOptions) 
 // under the same root item path, or if the caller does not have permission to
 // read Items. Use Query if you want to retrieve multiple items but don't
 // already know the full key paths of the items you want to get.
-func (s *store) GetBatch(ctx context.Context, request GetRequest) ([]*RawItem, error) {
-	response, err := s.client.Get(ctx, connect.NewRequest(&pb.GetRequest{
-		StoreId:    uint64(s.storeID),
+func (c *dataClient) GetBatch(ctx context.Context, request GetRequest) ([]*RawItem, error) {
+	response, err := c.client.Get(ctx, connect.NewRequest(&pb.GetRequest{
+		StoreId:    uint64(c.storeID),
 		Gets:       mapToItemKey(request.ItemPaths),
 		AllowStale: bool(request.AllowStale),
 		Atomic:     bool(request.Atomic),

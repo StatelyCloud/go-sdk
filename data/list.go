@@ -167,13 +167,13 @@ func (li *listIterator) Value() *RawItem {
 
 // ContinueList picks back up where this token left off. If there are no more results, `nil` will be returned.
 // The default sort direction is Forward if you do not specify ContinueOptions.
-func (s *store) ContinueList(ctx context.Context, token []byte) (ListResponse[*RawItem], error) {
+func (c *dataClient) ContinueList(ctx context.Context, token []byte) (ListResponse[*RawItem], error) {
 	if token == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("token is nil"))
 	}
 
 	// call continue list
-	response, err := s.client.ContinueList(ctx, connect.NewRequest(&pb.ContinueListRequest{
+	response, err := c.client.ContinueList(ctx, connect.NewRequest(&pb.ContinueListRequest{
 		TokenData: token,
 	}))
 	if err != nil {
@@ -192,7 +192,7 @@ func (s *store) ContinueList(ctx context.Context, token []byte) (ListResponse[*R
 // API that you can then pass to ContinueList to expand the result set, or to
 // SyncList to get updates within the result set. This can fail if the caller
 // does not have permission to read Items.
-func (s *store) BeginList(
+func (c *dataClient) BeginList(
 	ctx context.Context,
 	keyPath string,
 	opts ...ListOptions,
@@ -202,8 +202,8 @@ func (s *store) BeginList(
 		options = options.Merge(&opt)
 	}
 
-	response, err := s.client.BeginList(ctx, connect.NewRequest(&pb.BeginListRequest{
-		StoreId:       uint64(s.storeID),
+	response, err := c.client.BeginList(ctx, connect.NewRequest(&pb.BeginListRequest{
+		StoreId:       uint64(c.storeID),
 		KeyPathPrefix: keyPath,
 		AllowStale:    bool(options.AllowStale),
 		Limit:         options.Limit,

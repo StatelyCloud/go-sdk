@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StatelyCloud/go-sdk/common/auth"
+	"github.com/StatelyCloud/go-sdk/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,11 +41,9 @@ func TestGetToken(t *testing.T) {
 	// call GetAccessToken()
 	p, err := auth.NewAuthTokenProvider(
 		context.TODO(),
+		"client-id",
+		"client-secret",
 		&auth.Options{
-			Credentials: &auth.Credentials{
-				ClientID:     "client-id",
-				ClientSecret: "client-secret",
-			},
 			Audience: "test-aud",
 			Domain:   svr.URL,
 		},
@@ -78,11 +76,9 @@ func TestConcurrentRefresh(t *testing.T) {
 
 	p, err := auth.NewAuthTokenProvider(
 		context.TODO(),
+		"client-id",
+		"client-secret",
 		&auth.Options{
-			Credentials: &auth.Credentials{
-				ClientID:     "test-id",
-				ClientSecret: "test-secret",
-			},
 			Domain: svr.URL,
 		},
 	)
@@ -118,11 +114,9 @@ func TestRefreshExpiryScheduler(t *testing.T) {
 	// call GetAccessToken()
 	p, err := auth.NewAuthTokenProvider(
 		context.TODO(),
+		"client-id",
+		"client-secret",
 		&auth.Options{
-			Credentials: &auth.Credentials{
-				ClientID:     "test-id",
-				ClientSecret: "test-secret",
-			},
 			Domain: svr.URL,
 		},
 	)
@@ -159,11 +153,9 @@ func TestRefreshContextCancelled(t *testing.T) {
 	// call GetAccessToken()
 	p, err := auth.NewAuthTokenProvider(
 		ctx,
+		"client-id",
+		"client-secret",
 		&auth.Options{
-			Credentials: &auth.Credentials{
-				ClientID:     "test-id",
-				ClientSecret: "test-secret",
-			},
 			Domain: svr.URL,
 		},
 	)

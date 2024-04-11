@@ -3,16 +3,15 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
-	"os"
 	"sync"
 	"time"
-
-	timeComm "github.com/StatelyCloud/go-sdk/common/time"
 )
 
 var logger = log.New(log.Writer(), "[stately-sdk][auth_token_provider] ", log.LstdFlags)
@@ -29,50 +28,24 @@ type authResponse struct {
 	ExpiresInSecs uint64 `json:"expires_in"`
 }
 
-// TokenProvider is the interface which must be passed into the WithAuthToken{Unary,Stream}Interceptor
-// so that it can authenticate outgoing requests.
-// This is a thread-safe interface.
-type TokenProvider interface {
-	// GetAccessToken returns an access token or an error.
-	// If there is no current access token then the provider will attempt to refresh
-	// and get a new access token.
-	// An error is returned if there is no access token and the refresh operation fails
-	GetAccessToken(ctx context.Context) (string, error)
-	// RefreshAccessToken refreshes the current access token.
-	// If there is already an existing access token that token will be returned unless
-	// force=true is passed.
-	// If the refresh network operation fails then an error will be returned
-	// On successful refresh the internal state of the provider will be updated with the new token
-	// and successive calls to GetAccessToken() will return the new token.
-	RefreshAccessToken(ctx context.Context, force bool) (string, error)
-}
-
 const (
 	// default vals.
 	defaultDomain    = "https://oauth.stately.cloud"
 	defaultAudience  = "api.stately.cloud"
 	defaultGrantType = "client_credentials"
-
-	// env vars.
-	clientIDEnvVar     = "STATELY_CLIENT_ID"
-	clientSecretEnvVar = "STATELY_CLIENT_SECRET"
 )
 
 type authTokenProvider struct {
-	ctx         context.Context
-	credentials *Credentials
+	ctx context.Context
+
+	clientID     string
+	clientSecret string
+
 	domain      string
 	audience    string
 	grantType   string
 	accessToken string
 	mutex       *sync.RWMutex
-}
-
-// Credentials is a struct containing the client ID and and secret to be used
-// when requesting a token.
-type Credentials struct {
-	ClientID     string
-	ClientSecret string
 }
 
 // Options is a struct of options to be passed to NewAuthTokenProvider.
@@ -85,45 +58,13 @@ type Options struct {
 	// Audience is the audience that the provider will request tokens for.
 	// Defaults to api.stately.cloud
 	Audience string
-	// Credentials is the the client ID and secret to use when requesting auth.
-	// Defaults to value of the STATELY_CLIENT_ID and STATELY_CLIENT_SECRET env vars
-	Credentials *Credentials
-}
-
-func newDefaultCredentials() (*Credentials, error) {
-	clientID := os.Getenv(clientIDEnvVar)
-	if clientID == "" {
-		return nil, fmt.Errorf("unable to read client ID from %s env var", clientIDEnvVar)
-	}
-
-	clientSecret := os.Getenv(clientSecretEnvVar)
-	if clientSecret == "" {
-		return nil, fmt.Errorf("unable to read client secret from %s env var", clientSecretEnvVar)
-	}
-
-	return &Credentials{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-	}, nil
-}
-
-func newDefaultOptions() (*Options, error) {
-	creds, err := newDefaultCredentials()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read default credentials from environment")
-	}
-	return &Options{
-		Domain:      defaultDomain,
-		Audience:    defaultAudience,
-		Credentials: creds,
-	}, nil
 }
 
 // applyDefaults iterates through the given options struct and applied default values
 // where required.
-func applyDefaults(options *Options) (*Options, error) {
+func applyDefaults(options *Options) *Options {
 	if options == nil {
-		return newDefaultOptions()
+		options = &Options{}
 	}
 
 	// Domain
@@ -136,16 +77,7 @@ func applyDefaults(options *Options) (*Options, error) {
 		options.Audience = defaultAudience
 	}
 
-	// Credentials
-	if options.Credentials == nil {
-		creds, err := newDefaultCredentials()
-		if err != nil {
-			return nil, err
-		}
-		options.Credentials = creds
-	}
-
-	return options, nil
+	return options
 }
 
 // NewAuthTokenProvider creates a new AuthTokenProvider with the given context and options.
@@ -157,22 +89,23 @@ func applyDefaults(options *Options) (*Options, error) {
 // By default the AuthTokenProvider will fetch the client ID and client secret from the environment variables
 // `STATELY_CLIENT_ID` and `STATELY_CLIENT_SECRET`, however these can be explicitly overridden by passing
 // credentials in the options. If no credentials are found, NewAuthTokenProvider will return an error.
+//
+//nolint:revive // can't use client.AuthTokenProvider here because of circular dependency
 func NewAuthTokenProvider(
 	appCtx context.Context,
+	clientID, clientSecret string,
 	options *Options,
-) (TokenProvider, error) {
-	options, err := applyDefaults(options)
-	if err != nil {
-		return nil, err
-	}
+) (*authTokenProvider, error) {
+	options = applyDefaults(options)
 	p := &authTokenProvider{
-		ctx:         appCtx,
-		domain:      options.Domain,
-		audience:    options.Audience,
-		grantType:   defaultGrantType,
-		credentials: options.Credentials,
-		accessToken: "",
-		mutex:       &sync.RWMutex{},
+		ctx:          appCtx,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		domain:       options.Domain,
+		audience:     options.Audience,
+		grantType:    defaultGrantType,
+		accessToken:  "",
+		mutex:        &sync.RWMutex{},
 	}
 
 	// refresh access token as soon as we create this thing so the first request is faster
@@ -227,8 +160,8 @@ func (p *authTokenProvider) RefreshAccessToken(ctx context.Context, force bool) 
 func (p *authTokenProvider) refreshAccessTokenImpl(ctx context.Context) (string, error) {
 	// build the request
 	params := &authRequest{
-		ClientID:     p.credentials.ClientID,
-		ClientSecret: p.credentials.ClientSecret,
+		ClientID:     p.clientID,
+		ClientSecret: p.clientSecret,
 		Audience:     p.audience,
 		GrantType:    p.grantType,
 	}
@@ -274,7 +207,7 @@ func (p *authTokenProvider) refreshAccessTokenImpl(ctx context.Context) (string,
 	// TODO - this probably shouldn't refresh in the background automatically - instead, if we detect it's time to refresh *during* a request, we should refresh in the background while still using the old token
 	go func() {
 		// refresh auth between 2 and 5 sec before its required
-		jitter, err := timeComm.Jitter(time.Second*2, time.Second*5)
+		jitter, err := jitter(time.Second*2, time.Second*5)
 		if err != nil {
 			// if the jitter generator fails just use 5sec
 			logger.Printf("Error generating jitter: %e. Using default value: 5 seconds", err)
@@ -291,4 +224,13 @@ func (p *authTokenProvider) refreshAccessTokenImpl(ctx context.Context) (string,
 
 	// return the token
 	return authResp.AccessToken, err
+}
+
+// jitter creates a cryptographically random duration between the given bounds.
+func jitter(min, max time.Duration) (time.Duration, error) {
+	jitterNanos, err := rand.Int(rand.Reader, big.NewInt(max.Nanoseconds()-min.Nanoseconds()))
+	if err != nil {
+		return 0, err
+	}
+	return min + time.Duration(jitterNanos.Int64()), nil
 }
