@@ -6,7 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // ListRequest starts a list operation.
@@ -89,7 +89,7 @@ type ListToken struct {
 
 // newToken creates a new ListToken from a proto token and a store.
 // If the proto token is nil, newToken will return nil.
-func newToken(token *pb.ListToken) *ListToken {
+func newToken(token *pbdata.ListToken) *ListToken {
 	if token == nil {
 		return nil
 	}
@@ -104,7 +104,7 @@ func newToken(token *pb.ListToken) *ListToken {
 type stream struct {
 	// receive is a function that reads the next item from the stream. It should return false if the stream is done.
 	receive  func() bool
-	response pb.ListResponder
+	response pbdata.ListResponder
 	err      error
 }
 
@@ -113,7 +113,7 @@ type listIterator struct {
 
 	// tracks where we're at in the current response page
 	currPos  int
-	currResp []*pb.Item
+	currResp []*pbdata.Item
 	currItem *RawItem
 
 	// holds the final token and error to be returned by Token()
@@ -134,10 +134,10 @@ func (li *listIterator) Next() bool {
 		}
 
 		switch v := li.stream.response.(type) {
-		case *pb.ListPartialResult:
+		case *pbdata.ListPartialResult:
 			li.currResp = v.GetItems()
 			li.currPos = 0
-		case *pb.ListFinished:
+		case *pbdata.ListFinished:
 			li.finalToken = newToken(v.GetToken())
 		}
 
@@ -173,7 +173,7 @@ func (c *dataClient) ContinueList(ctx context.Context, token []byte) (ListRespon
 	}
 
 	// call continue list
-	response, err := c.client.ContinueList(ctx, connect.NewRequest(&pb.ContinueListRequest{
+	response, err := c.client.ContinueList(ctx, connect.NewRequest(&pbdata.ContinueListRequest{
 		TokenData: token,
 	}))
 	if err != nil {
@@ -202,13 +202,13 @@ func (c *dataClient) BeginList(
 		options = options.Merge(&opt)
 	}
 
-	response, err := c.client.BeginList(ctx, connect.NewRequest(&pb.BeginListRequest{
+	response, err := c.client.BeginList(ctx, connect.NewRequest(&pbdata.BeginListRequest{
 		StoreId:       uint64(c.storeID),
 		KeyPathPrefix: keyPath,
 		AllowStale:    bool(options.AllowStale),
 		Limit:         options.Limit,
-		SortProperty:  pb.SortableProperty(options.SortableProperty),
-		SortDirection: pb.SortDirection(options.SortDirection),
+		SortProperty:  pbdata.SortableProperty(options.SortableProperty),
+		SortDirection: pbdata.SortDirection(options.SortDirection),
 	}))
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (c *dataClient) BeginList(
 	}, nil
 }
 
-func newStream(response *connect.ServerStreamForClient[pb.ListResponse]) *stream {
+func newStream(response *connect.ServerStreamForClient[pbdata.ListResponse]) *stream {
 	newStream := &stream{}
 
 	newStream.receive = func() bool {

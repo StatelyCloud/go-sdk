@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // SyncResponse is a response from a sync operation.
@@ -64,7 +64,7 @@ func (r *Reset) IsSyncResponse() {}
 //	err, token := iter.Token()
 //	// handle error and token
 func (c *dataClient) SyncList(ctx context.Context, token []byte) (ListResponse[SyncResponse], error) {
-	resp, err := c.client.SyncList(ctx, connect.NewRequest(&pb.SyncListRequest{
+	resp, err := c.client.SyncList(ctx, connect.NewRequest(&pbdata.SyncListRequest{
 		TokenData: token,
 	}))
 	if err != nil {
@@ -75,14 +75,14 @@ func (c *dataClient) SyncList(ctx context.Context, token []byte) (ListResponse[S
 }
 
 type syncIterator struct {
-	stream *connect.ServerStreamForClient[pb.SyncListResponse]
+	stream *connect.ServerStreamForClient[pbdata.SyncListResponse]
 	// readNext allows us to set state that we want to pull more messages off the stream
 	readNext bool
 
 	// bookkeeping for handling partial responses
 	partialResponsePos int
 	partialResponseLen int
-	partialResponse    *pb.SyncListPartialResponse
+	partialResponse    *pbdata.SyncListPartialResponse
 
 	currValue SyncResponse
 
@@ -107,18 +107,18 @@ func (s *syncIterator) Next() bool {
 		}
 
 		switch v := s.stream.Msg().GetResponse().(type) {
-		case *pb.SyncListResponse_Reset_:
+		case *pbdata.SyncListResponse_Reset_:
 			s.currValue = &Reset{}
 			// after a reset message, we want to read the next message
 			s.readNext = true
 			// reset the partial response state, so we want to continue
 			return true
-		case *pb.SyncListResponse_Result:
+		case *pbdata.SyncListResponse_Result:
 			// reset the partial response state
 			s.partialResponsePos = 0
 			s.partialResponseLen = len(v.Result.GetChangedItems()) + len(v.Result.GetDeletedItems()) + len(v.Result.GetUpdatedItemKeysOutsideListWindow())
 			s.partialResponse = v.Result
-		case *pb.SyncListResponse_Finished:
+		case *pbdata.SyncListResponse_Finished:
 			// terminal state
 			s.currValue = nil // nil so if they call iter.Next() they'll get nil and have to call iter.Token()
 			s.finalToken = newToken(v.Finished.GetToken())

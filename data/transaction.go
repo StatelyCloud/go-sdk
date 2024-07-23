@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"sync/atomic"
 
 	"connectrpc.com/connect"
@@ -11,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/StatelyCloud/go-sdk/client"
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // NewTransaction starts a transaction and then hands transaction to your handler to preform all the logic necessary.
@@ -45,7 +46,7 @@ func (c *dataClient) NewTransaction(ctx context.Context, handler TransactionHand
 
 // Transaction represents a single transaction.
 type transaction struct {
-	stream *connect.BidiStreamForClient[pb.TransactionRequest, pb.TransactionResponse]
+	stream *connect.BidiStreamForClient[pbdata.TransactionRequest, pbdata.TransactionResponse]
 	done   atomic.Bool
 	id     atomic.Uint32
 
@@ -55,8 +56,8 @@ type transaction struct {
 }
 
 func (t *transaction) begin(id client.StoreID) error {
-	return t.stream.Send(t.newTXNReq(&pb.TransactionRequest_Begin{
-		Begin: &pb.TransactionBegin{StoreId: uint64(id)},
+	return t.safeSend(t.newTXNReq(&pbdata.TransactionRequest_Begin{
+		Begin: &pbdata.TransactionBegin{StoreId: uint64(id)},
 	}))
 }
 
@@ -76,15 +77,15 @@ func (t *transaction) abort() error {
 	if !t.done.CompareAndSwap(false, true) {
 		return nil // aborting an already closed transaction is a no-op
 	}
-	req := t.newTXNReq(&pb.TransactionRequest_Abort{
+	req := t.newTXNReq(&pbdata.TransactionRequest_Abort{
 		Abort: &emptypb.Empty{},
 	})
 
-	err := t.stream.Send(req)
+	err := t.safeSend(req)
 	if err != nil {
 		return err
 	}
-	_, err = receiveExpected(t, req.MessageId, (*pb.TransactionResponse).GetFinished)
+	_, err = receiveExpected(t, req.MessageId, (*pbdata.TransactionResponse).GetFinished)
 	return err
 }
 
@@ -93,32 +94,53 @@ func (t *transaction) commit() (*TransactionResults, error) {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("this transaction was already closed"))
 	}
 
-	req := t.newTXNReq(&pb.TransactionRequest_Commit{
+	req := t.newTXNReq(&pbdata.TransactionRequest_Commit{
 		Commit: &emptypb.Empty{},
 	})
-	err := t.stream.Send(req)
+	err := t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := receiveExpected(t, req.MessageId, (*pb.TransactionResponse).GetFinished)
+	resp, err := receiveExpected(t, req.MessageId, (*pbdata.TransactionResponse).GetFinished)
 	if err != nil {
 		return nil, err
 	}
-
+	puts, err := mapPutResponses(resp.GetPutResults(), t.putRequests)
+	if err != nil {
+		return nil, err
+	}
+	appends, err := mapAppendResponses(resp.GetAppendResults(), t.appendRequests)
+	if err != nil {
+		return nil, err
+	}
 	return &TransactionResults{
-		PutResponse:    mapPutResponses(resp.GetPutResults(), t.putRequests),
-		AppendResponse: mapAppendResponses(resp.GetAppendResults(), t.appendRequests),
+		PutResponse:    puts,
+		AppendResponse: appends,
 		DeleteResponse: mapDeleteResponse(resp.GetDeleteResults()),
 		Committed:      resp.GetCommitted(),
 	}, nil
+}
+
+// It is possible to call Send on a closed stream, this usually means an error
+// was returned by the server and is stashed in the "Receive" method so
+// all sends should check for this.
+func (t *transaction) safeSend(req *pbdata.TransactionRequest) error {
+	err := t.stream.Send(req)
+	if errors.Is(err, io.EOF) { // EOF is the error returned when the stream is closed.
+		_, err := t.stream.Receive()
+		if err != nil {
+			return err
+		}
+	}
+	return err // otherwise return the original.
 }
 
 // receiveExpected will either return the expected type or an error.
 func receiveExpected[PT *T, T any](
 	txn *transaction,
 	msgID uint32,
-	getter func(response *pb.TransactionResponse) PT,
+	getter func(response *pbdata.TransactionResponse) PT,
 ) (PT, error) {
 	resp, err := txn.stream.Receive()
 	done := err != nil || resp.GetFinished() != nil

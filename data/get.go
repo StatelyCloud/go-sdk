@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // GetRequest will fetch all specified keys and return any found.
@@ -17,12 +17,6 @@ type GetRequest struct {
 	// get the old version of the item. This can result in improved performance,
 	// availability, and cost.
 	AllowStale AllowStale
-	// (optional) Atomic indicates that all gets in this request should be executed
-	// atomically relative to other requests - that is, it will retrieve the items
-	// as they were at the same point in time. If this is false (the default),
-	// then each get will be executed independently, meaning each get may be
-	// interleaved with modifications by other requests.
-	Atomic IsAtomic
 }
 
 // GetOptions is a struct that can be passed to Get. Default handling is to not allow stale items.
@@ -36,7 +30,7 @@ type GetOptions struct {
 
 // NewGetRequest is a convenience method in golang to allow simple construction of GetRequests via
 // NewGetRequest("/message-1") vs GetRequest{ ItemPaths: []KeyPath{}{"/message-1"} }\
-// You can then additionally set the "AllowStale" or "Atomic" fields.
+// You can then set any optional fields such as "AllowStale".
 func NewGetRequest(itemPaths ...string) GetRequest {
 	return GetRequest{
 		ItemPaths: itemPaths,
@@ -70,11 +64,10 @@ func (c *dataClient) Get(ctx context.Context, itemPath string, option ...GetOpti
 // read Items. Use Query if you want to retrieve multiple items but don't
 // already know the full key paths of the items you want to get.
 func (c *dataClient) GetBatch(ctx context.Context, request GetRequest) ([]*RawItem, error) {
-	response, err := c.client.Get(ctx, connect.NewRequest(&pb.GetRequest{
+	response, err := c.client.Get(ctx, connect.NewRequest(&pbdata.GetRequest{
 		StoreId:    uint64(c.storeID),
 		Gets:       mapToItemKey(request.ItemPaths),
 		AllowStale: bool(request.AllowStale),
-		Atomic:     bool(request.Atomic),
 	}))
 	if err != nil {
 		return nil, err
@@ -91,10 +84,10 @@ func (c *dataClient) GetBatch(ctx context.Context, request GetRequest) ([]*RawIt
 	return items, nil
 }
 
-func mapToItemKey(keys []string) []*pb.GetItem {
-	getItems := make([]*pb.GetItem, len(keys))
+func mapToItemKey(keys []string) []*pbdata.GetItem {
+	getItems := make([]*pbdata.GetItem, len(keys))
 	for i, v := range keys {
-		getItems[i] = &pb.GetItem{KeyPath: v}
+		getItems[i] = &pbdata.GetItem{KeyPath: v}
 	}
 	return getItems
 }

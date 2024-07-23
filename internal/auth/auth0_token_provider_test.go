@@ -12,9 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/StatelyCloud/go-sdk/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/StatelyCloud/go-sdk/internal/auth"
 )
 
 func TestGetToken(t *testing.T) {
@@ -32,14 +33,12 @@ func TestGetToken(t *testing.T) {
 		assert.Equal(t, "client-id", reqData["client_id"])
 		assert.Equal(t, "client-secret", reqData["client_secret"])
 
-		// send a response
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(map[string]interface{}{"access_token": "test-token", "expires_in": 1000})
+		err = json.NewEncoder(w).Encode(map[string]any{"access_token": "test-token", "expires_in": 1000})
 		require.NoError(t, err)
 	}))
 
-	// call GetAccessToken()
-	p, err := auth.NewAuthTokenProvider(
+	p := auth.NewAuthTokenProvider(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -48,7 +47,6 @@ func TestGetToken(t *testing.T) {
 			Domain:   svr.URL,
 		},
 	)
-	require.NoError(t, err)
 
 	token, err := p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
@@ -69,12 +67,12 @@ func TestConcurrentRefresh(t *testing.T) {
 		time.Sleep(time.Millisecond * 100)
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
-			Encode(map[string]interface{}{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
+			Encode(map[string]any{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
 		require.NoError(t, err)
 		count.Add(1)
 	}))
 
-	p, err := auth.NewAuthTokenProvider(
+	p := auth.NewAuthTokenProvider(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -82,7 +80,6 @@ func TestConcurrentRefresh(t *testing.T) {
 			Domain: svr.URL,
 		},
 	)
-	require.NoError(t, err)
 
 	wg := &sync.WaitGroup{}
 	for i := 1; i <= 10; i++ {
@@ -98,21 +95,22 @@ func TestConcurrentRefresh(t *testing.T) {
 	wg.Wait()
 }
 
-func TestRefreshExpiryScheduler(t *testing.T) {
+func TestGetExpiredAuth(t *testing.T) {
 	t.Parallel()
 	returnVal := atomic.Value{}
 	returnVal.Store("test-token")
+
+	// Mock out a token that expires in 1 second
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// send a response
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
-			Encode(map[string]interface{}{"access_token": returnVal.Load(), "expires_in": 0})
+			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
 		require.NoError(t, err)
 	}))
 	defer svr.Close()
 
-	// call GetAccessToken()
-	p, err := auth.NewAuthTokenProvider(
+	p := auth.NewAuthTokenProvider(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -120,17 +118,63 @@ func TestRefreshExpiryScheduler(t *testing.T) {
 			Domain: svr.URL,
 		},
 	)
+
+	token, err := p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
+	assert.Equal(t, "test-token", token)
+
+	// Let the token expire
+	time.Sleep(1 * time.Second)
+
+	// now update the return value and call GetAccessToken again
+	// we will trigger a blocking refresh because the current token is expired
+	returnVal.Store("test-token2")
+	// triggers the background refresh
+	token, err = p.GetAccessToken(context.TODO())
+	require.NoError(t, err)
+	// We expect the new token to be returned because the old one had expired
+	assert.Equal(t, "test-token2", token)
+}
+
+// NOTE: This test has 2 sleeps in it. I can see a world where it is flaky because of that.
+// If you see this test failing in the CI then maybe just comment it out.
+func TestBackgroundRefresh(t *testing.T) {
+	t.Parallel()
+	returnVal := atomic.Value{}
+	returnVal.Store("test-token")
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).
+			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
+		require.NoError(t, err)
+	}))
+	defer svr.Close()
+
+	p := auth.NewAuthTokenProvider(
+		context.TODO(),
+		"client-id",
+		"client-secret",
+		&auth.Options{
+			Domain: svr.URL,
+		},
+	)
 
 	token, err := p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
 
 	// now update the return value and call GetAccessToken again
-	// we should refresh the new value from the server
+	// we will trigger a blocking refresh because the current token is expired
 	returnVal.Store("test-token2")
-	// wait 20ms to give some buffer for th 0ms refresh
-	time.Sleep(time.Millisecond * 20)
+	// sleep 850 millis which is guaranteed to put us in the background refresh window
+	time.Sleep(time.Millisecond * 850)
+	// triggers the background refresh
+	token, err = p.GetAccessToken(context.TODO())
+	require.NoError(t, err)
+	assert.Equal(t, "test-token", token)
+
+	// sleep another 200 millis to allow for the request to complete
+	time.Sleep(time.Millisecond * 200)
 	token, err = p.GetAccessToken(context.TODO())
 	require.NoError(t, err)
 	assert.Equal(t, "test-token2", token)
@@ -139,10 +183,9 @@ func TestRefreshExpiryScheduler(t *testing.T) {
 func TestRefreshContextCancelled(t *testing.T) {
 	t.Parallel()
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		// send a response
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
-			Encode(map[string]interface{}{"access_token": "test-token", "expires_in": 0})
+			Encode(map[string]any{"access_token": "test-token", "expires_in": 0})
 		require.NoError(t, err)
 	}))
 	defer svr.Close()
@@ -150,8 +193,7 @@ func TestRefreshContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel()
 
-	// call GetAccessToken()
-	p, err := auth.NewAuthTokenProvider(
+	p := auth.NewAuthTokenProvider(
 		ctx,
 		"client-id",
 		"client-secret",
@@ -159,9 +201,35 @@ func TestRefreshContextCancelled(t *testing.T) {
 			Domain: svr.URL,
 		},
 	)
-	require.NoError(t, err)
 
 	token, err := p.GetAccessToken(ctx)
+	assert.Equal(t, "", token)
+	assert.NotNil(t, err)
+}
+
+// This test mimics a situation where auth0 is down and returning 500 errors.
+// The test asserts that calls to GetAccessToken() will return an error and an empty token.
+func TestNetworkError(t *testing.T) {
+	t.Parallel()
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(time.Millisecond * 100)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err := w.Write([]byte("500 - Something bad happened!"))
+		require.NoError(t, err)
+	}))
+	defer svr.Close()
+
+	p := auth.NewAuthTokenProvider(
+		context.TODO(),
+		"client-id",
+		"client-secret",
+		&auth.Options{
+			Domain:                  svr.URL,
+			InitialRetryBackoffTime: time.Microsecond * 1,
+		},
+	)
+
+	token, err := p.GetAccessToken(context.TODO())
 	assert.Equal(t, "", token)
 	assert.NotNil(t, err)
 }

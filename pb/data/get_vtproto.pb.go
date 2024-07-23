@@ -26,7 +26,6 @@ func (m *GetRequest) CloneVT() *GetRequest {
 	r := new(GetRequest)
 	r.StoreId = m.StoreId
 	r.AllowStale = m.AllowStale
-	r.Atomic = m.Atomic
 	if rhs := m.Gets; rhs != nil {
 		tmpContainer := make([]*GetItem, len(rhs))
 		for k, v := range rhs {
@@ -112,9 +111,6 @@ func (this *GetRequest) EqualVT(that *GetRequest) bool {
 		}
 	}
 	if this.AllowStale != that.AllowStale {
-		return false
-	}
-	if this.Atomic != that.Atomic {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -208,16 +204,6 @@ func (m *GetRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.Atomic {
-		i--
-		if m.Atomic {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
 	}
 	if m.AllowStale {
 		i--
@@ -350,9 +336,6 @@ func (m *GetRequest) SizeVT() (n int) {
 		}
 	}
 	if m.AllowStale {
-		n += 2
-	}
-	if m.Atomic {
 		n += 2
 	}
 	n += len(m.unknownFields)
@@ -491,26 +474,6 @@ func (m *GetRequest) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.AllowStale = bool(v != 0)
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Atomic", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Atomic = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

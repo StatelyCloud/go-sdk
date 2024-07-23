@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// UserName is the fully-qualified name of the User service.
-	UserName = "stately.User"
+	// UserServiceName is the fully-qualified name of the UserService service.
+	UserServiceName = "stately.user.UserService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,51 +33,57 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// UserWhoamiProcedure is the fully-qualified name of the User's Whoami RPC.
-	UserWhoamiProcedure = "/stately.User/Whoami"
-	// UserGetCallerIdentityProcedure is the fully-qualified name of the User's GetCallerIdentity RPC.
-	UserGetCallerIdentityProcedure = "/stately.User/GetCallerIdentity"
-	// UserEnrollProcedure is the fully-qualified name of the User's Enroll RPC.
-	UserEnrollProcedure = "/stately.User/Enroll"
-	// UserEnrollMachineUserProcedure is the fully-qualified name of the User's EnrollMachineUser RPC.
-	UserEnrollMachineUserProcedure = "/stately.User/EnrollMachineUser"
-	// UserCreateProjectProcedure is the fully-qualified name of the User's CreateProject RPC.
-	UserCreateProjectProcedure = "/stately.User/CreateProject"
-	// UserDeleteProjectProcedure is the fully-qualified name of the User's DeleteProject RPC.
-	UserDeleteProjectProcedure = "/stately.User/DeleteProject"
-	// UserCreateOrganizationProcedure is the fully-qualified name of the User's CreateOrganization RPC.
-	UserCreateOrganizationProcedure = "/stately.User/CreateOrganization"
-	// UserListAllOrganizationsProcedure is the fully-qualified name of the User's ListAllOrganizations
+	// UserServiceWhoamiProcedure is the fully-qualified name of the UserService's Whoami RPC.
+	UserServiceWhoamiProcedure = "/stately.user.UserService/Whoami"
+	// UserServiceGetCallerIdentityProcedure is the fully-qualified name of the UserService's
+	// GetCallerIdentity RPC.
+	UserServiceGetCallerIdentityProcedure = "/stately.user.UserService/GetCallerIdentity"
+	// UserServiceEnrollProcedure is the fully-qualified name of the UserService's Enroll RPC.
+	UserServiceEnrollProcedure = "/stately.user.UserService/Enroll"
+	// UserServiceEnrollMachineUserProcedure is the fully-qualified name of the UserService's
+	// EnrollMachineUser RPC.
+	UserServiceEnrollMachineUserProcedure = "/stately.user.UserService/EnrollMachineUser"
+	// UserServiceCreateProjectProcedure is the fully-qualified name of the UserService's CreateProject
 	// RPC.
-	UserListAllOrganizationsProcedure = "/stately.User/ListAllOrganizations"
-	// UserDeleteOrganizationProcedure is the fully-qualified name of the User's DeleteOrganization RPC.
-	UserDeleteOrganizationProcedure = "/stately.User/DeleteOrganization"
-	// UserAddUsersToOrganizationProcedure is the fully-qualified name of the User's
+	UserServiceCreateProjectProcedure = "/stately.user.UserService/CreateProject"
+	// UserServiceDeleteProjectProcedure is the fully-qualified name of the UserService's DeleteProject
+	// RPC.
+	UserServiceDeleteProjectProcedure = "/stately.user.UserService/DeleteProject"
+	// UserServiceCreateOrganizationProcedure is the fully-qualified name of the UserService's
+	// CreateOrganization RPC.
+	UserServiceCreateOrganizationProcedure = "/stately.user.UserService/CreateOrganization"
+	// UserServiceListAllOrganizationsProcedure is the fully-qualified name of the UserService's
+	// ListAllOrganizations RPC.
+	UserServiceListAllOrganizationsProcedure = "/stately.user.UserService/ListAllOrganizations"
+	// UserServiceDeleteOrganizationProcedure is the fully-qualified name of the UserService's
+	// DeleteOrganization RPC.
+	UserServiceDeleteOrganizationProcedure = "/stately.user.UserService/DeleteOrganization"
+	// UserServiceAddUsersToOrganizationProcedure is the fully-qualified name of the UserService's
 	// AddUsersToOrganization RPC.
-	UserAddUsersToOrganizationProcedure = "/stately.User/AddUsersToOrganization"
-	// UserRemoveUsersFromOrganizationProcedure is the fully-qualified name of the User's
+	UserServiceAddUsersToOrganizationProcedure = "/stately.user.UserService/AddUsersToOrganization"
+	// UserServiceRemoveUsersFromOrganizationProcedure is the fully-qualified name of the UserService's
 	// RemoveUsersFromOrganization RPC.
-	UserRemoveUsersFromOrganizationProcedure = "/stately.User/RemoveUsersFromOrganization"
+	UserServiceRemoveUsersFromOrganizationProcedure = "/stately.user.UserService/RemoveUsersFromOrganization"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	userServiceDescriptor                           = user.File_user_service_proto.Services().ByName("User")
-	userWhoamiMethodDescriptor                      = userServiceDescriptor.Methods().ByName("Whoami")
-	userGetCallerIdentityMethodDescriptor           = userServiceDescriptor.Methods().ByName("GetCallerIdentity")
-	userEnrollMethodDescriptor                      = userServiceDescriptor.Methods().ByName("Enroll")
-	userEnrollMachineUserMethodDescriptor           = userServiceDescriptor.Methods().ByName("EnrollMachineUser")
-	userCreateProjectMethodDescriptor               = userServiceDescriptor.Methods().ByName("CreateProject")
-	userDeleteProjectMethodDescriptor               = userServiceDescriptor.Methods().ByName("DeleteProject")
-	userCreateOrganizationMethodDescriptor          = userServiceDescriptor.Methods().ByName("CreateOrganization")
-	userListAllOrganizationsMethodDescriptor        = userServiceDescriptor.Methods().ByName("ListAllOrganizations")
-	userDeleteOrganizationMethodDescriptor          = userServiceDescriptor.Methods().ByName("DeleteOrganization")
-	userAddUsersToOrganizationMethodDescriptor      = userServiceDescriptor.Methods().ByName("AddUsersToOrganization")
-	userRemoveUsersFromOrganizationMethodDescriptor = userServiceDescriptor.Methods().ByName("RemoveUsersFromOrganization")
+	userServiceServiceDescriptor                           = user.File_user_service_proto.Services().ByName("UserService")
+	userServiceWhoamiMethodDescriptor                      = userServiceServiceDescriptor.Methods().ByName("Whoami")
+	userServiceGetCallerIdentityMethodDescriptor           = userServiceServiceDescriptor.Methods().ByName("GetCallerIdentity")
+	userServiceEnrollMethodDescriptor                      = userServiceServiceDescriptor.Methods().ByName("Enroll")
+	userServiceEnrollMachineUserMethodDescriptor           = userServiceServiceDescriptor.Methods().ByName("EnrollMachineUser")
+	userServiceCreateProjectMethodDescriptor               = userServiceServiceDescriptor.Methods().ByName("CreateProject")
+	userServiceDeleteProjectMethodDescriptor               = userServiceServiceDescriptor.Methods().ByName("DeleteProject")
+	userServiceCreateOrganizationMethodDescriptor          = userServiceServiceDescriptor.Methods().ByName("CreateOrganization")
+	userServiceListAllOrganizationsMethodDescriptor        = userServiceServiceDescriptor.Methods().ByName("ListAllOrganizations")
+	userServiceDeleteOrganizationMethodDescriptor          = userServiceServiceDescriptor.Methods().ByName("DeleteOrganization")
+	userServiceAddUsersToOrganizationMethodDescriptor      = userServiceServiceDescriptor.Methods().ByName("AddUsersToOrganization")
+	userServiceRemoveUsersFromOrganizationMethodDescriptor = userServiceServiceDescriptor.Methods().ByName("RemoveUsersFromOrganization")
 )
 
-// UserClient is a client for the stately.User service.
-type UserClient interface {
+// UserServiceClient is a client for the stately.user.UserService service.
+type UserServiceClient interface {
 	// Whoami returns information about the user that calls it (based on the auth
 	// token). This includes information about what organizations the user belongs
 	// to, what projects they have access to, what roles(?) they can use, etc.
@@ -137,96 +143,96 @@ type UserClient interface {
 	RemoveUsersFromOrganization(context.Context, *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error)
 }
 
-// NewUserClient constructs a client for the stately.User service. By default, it uses the Connect
-// protocol with the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed
-// requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// NewUserServiceClient constructs a client for the stately.user.UserService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewUserClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) UserClient {
+func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) UserServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	return &userClient{
+	return &userServiceClient{
 		whoami: connect.NewClient[user.WhoamiRequest, user.WhoamiResponse](
 			httpClient,
-			baseURL+UserWhoamiProcedure,
-			connect.WithSchema(userWhoamiMethodDescriptor),
+			baseURL+UserServiceWhoamiProcedure,
+			connect.WithSchema(userServiceWhoamiMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		getCallerIdentity: connect.NewClient[user.GetCallerIdentityRequest, user.GetCallerIdentityResponse](
 			httpClient,
-			baseURL+UserGetCallerIdentityProcedure,
-			connect.WithSchema(userGetCallerIdentityMethodDescriptor),
+			baseURL+UserServiceGetCallerIdentityProcedure,
+			connect.WithSchema(userServiceGetCallerIdentityMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		enroll: connect.NewClient[user.EnrollRequest, user.EnrollResponse](
 			httpClient,
-			baseURL+UserEnrollProcedure,
-			connect.WithSchema(userEnrollMethodDescriptor),
+			baseURL+UserServiceEnrollProcedure,
+			connect.WithSchema(userServiceEnrollMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		enrollMachineUser: connect.NewClient[user.EnrollMachineUserRequest, user.EnrollMachineUserResponse](
 			httpClient,
-			baseURL+UserEnrollMachineUserProcedure,
-			connect.WithSchema(userEnrollMachineUserMethodDescriptor),
+			baseURL+UserServiceEnrollMachineUserProcedure,
+			connect.WithSchema(userServiceEnrollMachineUserMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		createProject: connect.NewClient[user.CreateProjectRequest, user.CreateProjectResponse](
 			httpClient,
-			baseURL+UserCreateProjectProcedure,
-			connect.WithSchema(userCreateProjectMethodDescriptor),
+			baseURL+UserServiceCreateProjectProcedure,
+			connect.WithSchema(userServiceCreateProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		deleteProject: connect.NewClient[user.DeleteProjectRequest, user.DeleteProjectResponse](
 			httpClient,
-			baseURL+UserDeleteProjectProcedure,
-			connect.WithSchema(userDeleteProjectMethodDescriptor),
+			baseURL+UserServiceDeleteProjectProcedure,
+			connect.WithSchema(userServiceDeleteProjectMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		createOrganization: connect.NewClient[user.CreateOrganizationRequest, user.CreateOrganizationResponse](
 			httpClient,
-			baseURL+UserCreateOrganizationProcedure,
-			connect.WithSchema(userCreateOrganizationMethodDescriptor),
+			baseURL+UserServiceCreateOrganizationProcedure,
+			connect.WithSchema(userServiceCreateOrganizationMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		listAllOrganizations: connect.NewClient[user.ListAllOrganizationsRequest, user.ListAllOrganizationsResponse](
 			httpClient,
-			baseURL+UserListAllOrganizationsProcedure,
-			connect.WithSchema(userListAllOrganizationsMethodDescriptor),
+			baseURL+UserServiceListAllOrganizationsProcedure,
+			connect.WithSchema(userServiceListAllOrganizationsMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		deleteOrganization: connect.NewClient[user.DeleteOrganizationRequest, user.DeleteOrganizationResponse](
 			httpClient,
-			baseURL+UserDeleteOrganizationProcedure,
-			connect.WithSchema(userDeleteOrganizationMethodDescriptor),
+			baseURL+UserServiceDeleteOrganizationProcedure,
+			connect.WithSchema(userServiceDeleteOrganizationMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		addUsersToOrganization: connect.NewClient[user.AddUsersToOrganizationRequest, user.AddUsersToOrganizationResponse](
 			httpClient,
-			baseURL+UserAddUsersToOrganizationProcedure,
-			connect.WithSchema(userAddUsersToOrganizationMethodDescriptor),
+			baseURL+UserServiceAddUsersToOrganizationProcedure,
+			connect.WithSchema(userServiceAddUsersToOrganizationMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		removeUsersFromOrganization: connect.NewClient[user.RemoveUsersFromOrganizationRequest, user.RemoveUsersFromOrganizationResponse](
 			httpClient,
-			baseURL+UserRemoveUsersFromOrganizationProcedure,
-			connect.WithSchema(userRemoveUsersFromOrganizationMethodDescriptor),
+			baseURL+UserServiceRemoveUsersFromOrganizationProcedure,
+			connect.WithSchema(userServiceRemoveUsersFromOrganizationMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// userClient implements UserClient.
-type userClient struct {
+// userServiceClient implements UserServiceClient.
+type userServiceClient struct {
 	whoami                      *connect.Client[user.WhoamiRequest, user.WhoamiResponse]
 	getCallerIdentity           *connect.Client[user.GetCallerIdentityRequest, user.GetCallerIdentityResponse]
 	enroll                      *connect.Client[user.EnrollRequest, user.EnrollResponse]
@@ -240,63 +246,63 @@ type userClient struct {
 	removeUsersFromOrganization *connect.Client[user.RemoveUsersFromOrganizationRequest, user.RemoveUsersFromOrganizationResponse]
 }
 
-// Whoami calls stately.User.Whoami.
-func (c *userClient) Whoami(ctx context.Context, req *connect.Request[user.WhoamiRequest]) (*connect.Response[user.WhoamiResponse], error) {
+// Whoami calls stately.user.UserService.Whoami.
+func (c *userServiceClient) Whoami(ctx context.Context, req *connect.Request[user.WhoamiRequest]) (*connect.Response[user.WhoamiResponse], error) {
 	return c.whoami.CallUnary(ctx, req)
 }
 
-// GetCallerIdentity calls stately.User.GetCallerIdentity.
-func (c *userClient) GetCallerIdentity(ctx context.Context, req *connect.Request[user.GetCallerIdentityRequest]) (*connect.Response[user.GetCallerIdentityResponse], error) {
+// GetCallerIdentity calls stately.user.UserService.GetCallerIdentity.
+func (c *userServiceClient) GetCallerIdentity(ctx context.Context, req *connect.Request[user.GetCallerIdentityRequest]) (*connect.Response[user.GetCallerIdentityResponse], error) {
 	return c.getCallerIdentity.CallUnary(ctx, req)
 }
 
-// Enroll calls stately.User.Enroll.
-func (c *userClient) Enroll(ctx context.Context, req *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
+// Enroll calls stately.user.UserService.Enroll.
+func (c *userServiceClient) Enroll(ctx context.Context, req *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
 	return c.enroll.CallUnary(ctx, req)
 }
 
-// EnrollMachineUser calls stately.User.EnrollMachineUser.
-func (c *userClient) EnrollMachineUser(ctx context.Context, req *connect.Request[user.EnrollMachineUserRequest]) (*connect.Response[user.EnrollMachineUserResponse], error) {
+// EnrollMachineUser calls stately.user.UserService.EnrollMachineUser.
+func (c *userServiceClient) EnrollMachineUser(ctx context.Context, req *connect.Request[user.EnrollMachineUserRequest]) (*connect.Response[user.EnrollMachineUserResponse], error) {
 	return c.enrollMachineUser.CallUnary(ctx, req)
 }
 
-// CreateProject calls stately.User.CreateProject.
-func (c *userClient) CreateProject(ctx context.Context, req *connect.Request[user.CreateProjectRequest]) (*connect.Response[user.CreateProjectResponse], error) {
+// CreateProject calls stately.user.UserService.CreateProject.
+func (c *userServiceClient) CreateProject(ctx context.Context, req *connect.Request[user.CreateProjectRequest]) (*connect.Response[user.CreateProjectResponse], error) {
 	return c.createProject.CallUnary(ctx, req)
 }
 
-// DeleteProject calls stately.User.DeleteProject.
-func (c *userClient) DeleteProject(ctx context.Context, req *connect.Request[user.DeleteProjectRequest]) (*connect.Response[user.DeleteProjectResponse], error) {
+// DeleteProject calls stately.user.UserService.DeleteProject.
+func (c *userServiceClient) DeleteProject(ctx context.Context, req *connect.Request[user.DeleteProjectRequest]) (*connect.Response[user.DeleteProjectResponse], error) {
 	return c.deleteProject.CallUnary(ctx, req)
 }
 
-// CreateOrganization calls stately.User.CreateOrganization.
-func (c *userClient) CreateOrganization(ctx context.Context, req *connect.Request[user.CreateOrganizationRequest]) (*connect.Response[user.CreateOrganizationResponse], error) {
+// CreateOrganization calls stately.user.UserService.CreateOrganization.
+func (c *userServiceClient) CreateOrganization(ctx context.Context, req *connect.Request[user.CreateOrganizationRequest]) (*connect.Response[user.CreateOrganizationResponse], error) {
 	return c.createOrganization.CallUnary(ctx, req)
 }
 
-// ListAllOrganizations calls stately.User.ListAllOrganizations.
-func (c *userClient) ListAllOrganizations(ctx context.Context, req *connect.Request[user.ListAllOrganizationsRequest]) (*connect.Response[user.ListAllOrganizationsResponse], error) {
+// ListAllOrganizations calls stately.user.UserService.ListAllOrganizations.
+func (c *userServiceClient) ListAllOrganizations(ctx context.Context, req *connect.Request[user.ListAllOrganizationsRequest]) (*connect.Response[user.ListAllOrganizationsResponse], error) {
 	return c.listAllOrganizations.CallUnary(ctx, req)
 }
 
-// DeleteOrganization calls stately.User.DeleteOrganization.
-func (c *userClient) DeleteOrganization(ctx context.Context, req *connect.Request[user.DeleteOrganizationRequest]) (*connect.Response[user.DeleteOrganizationResponse], error) {
+// DeleteOrganization calls stately.user.UserService.DeleteOrganization.
+func (c *userServiceClient) DeleteOrganization(ctx context.Context, req *connect.Request[user.DeleteOrganizationRequest]) (*connect.Response[user.DeleteOrganizationResponse], error) {
 	return c.deleteOrganization.CallUnary(ctx, req)
 }
 
-// AddUsersToOrganization calls stately.User.AddUsersToOrganization.
-func (c *userClient) AddUsersToOrganization(ctx context.Context, req *connect.Request[user.AddUsersToOrganizationRequest]) (*connect.Response[user.AddUsersToOrganizationResponse], error) {
+// AddUsersToOrganization calls stately.user.UserService.AddUsersToOrganization.
+func (c *userServiceClient) AddUsersToOrganization(ctx context.Context, req *connect.Request[user.AddUsersToOrganizationRequest]) (*connect.Response[user.AddUsersToOrganizationResponse], error) {
 	return c.addUsersToOrganization.CallUnary(ctx, req)
 }
 
-// RemoveUsersFromOrganization calls stately.User.RemoveUsersFromOrganization.
-func (c *userClient) RemoveUsersFromOrganization(ctx context.Context, req *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error) {
+// RemoveUsersFromOrganization calls stately.user.UserService.RemoveUsersFromOrganization.
+func (c *userServiceClient) RemoveUsersFromOrganization(ctx context.Context, req *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error) {
 	return c.removeUsersFromOrganization.CallUnary(ctx, req)
 }
 
-// UserHandler is an implementation of the stately.User service.
-type UserHandler interface {
+// UserServiceHandler is an implementation of the stately.user.UserService service.
+type UserServiceHandler interface {
 	// Whoami returns information about the user that calls it (based on the auth
 	// token). This includes information about what organizations the user belongs
 	// to, what projects they have access to, what roles(?) they can use, etc.
@@ -356,160 +362,160 @@ type UserHandler interface {
 	RemoveUsersFromOrganization(context.Context, *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error)
 }
 
-// NewUserHandler builds an HTTP handler from the service implementation. It returns the path on
-// which to mount the handler and the handler itself.
+// NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
+// on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewUserHandler(svc UserHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	userWhoamiHandler := connect.NewUnaryHandler(
-		UserWhoamiProcedure,
+func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	userServiceWhoamiHandler := connect.NewUnaryHandler(
+		UserServiceWhoamiProcedure,
 		svc.Whoami,
-		connect.WithSchema(userWhoamiMethodDescriptor),
+		connect.WithSchema(userServiceWhoamiMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	userGetCallerIdentityHandler := connect.NewUnaryHandler(
-		UserGetCallerIdentityProcedure,
+	userServiceGetCallerIdentityHandler := connect.NewUnaryHandler(
+		UserServiceGetCallerIdentityProcedure,
 		svc.GetCallerIdentity,
-		connect.WithSchema(userGetCallerIdentityMethodDescriptor),
+		connect.WithSchema(userServiceGetCallerIdentityMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	userEnrollHandler := connect.NewUnaryHandler(
-		UserEnrollProcedure,
+	userServiceEnrollHandler := connect.NewUnaryHandler(
+		UserServiceEnrollProcedure,
 		svc.Enroll,
-		connect.WithSchema(userEnrollMethodDescriptor),
+		connect.WithSchema(userServiceEnrollMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	userEnrollMachineUserHandler := connect.NewUnaryHandler(
-		UserEnrollMachineUserProcedure,
+	userServiceEnrollMachineUserHandler := connect.NewUnaryHandler(
+		UserServiceEnrollMachineUserProcedure,
 		svc.EnrollMachineUser,
-		connect.WithSchema(userEnrollMachineUserMethodDescriptor),
+		connect.WithSchema(userServiceEnrollMachineUserMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	userCreateProjectHandler := connect.NewUnaryHandler(
-		UserCreateProjectProcedure,
+	userServiceCreateProjectHandler := connect.NewUnaryHandler(
+		UserServiceCreateProjectProcedure,
 		svc.CreateProject,
-		connect.WithSchema(userCreateProjectMethodDescriptor),
+		connect.WithSchema(userServiceCreateProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	userDeleteProjectHandler := connect.NewUnaryHandler(
-		UserDeleteProjectProcedure,
+	userServiceDeleteProjectHandler := connect.NewUnaryHandler(
+		UserServiceDeleteProjectProcedure,
 		svc.DeleteProject,
-		connect.WithSchema(userDeleteProjectMethodDescriptor),
+		connect.WithSchema(userServiceDeleteProjectMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	userCreateOrganizationHandler := connect.NewUnaryHandler(
-		UserCreateOrganizationProcedure,
+	userServiceCreateOrganizationHandler := connect.NewUnaryHandler(
+		UserServiceCreateOrganizationProcedure,
 		svc.CreateOrganization,
-		connect.WithSchema(userCreateOrganizationMethodDescriptor),
+		connect.WithSchema(userServiceCreateOrganizationMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	userListAllOrganizationsHandler := connect.NewUnaryHandler(
-		UserListAllOrganizationsProcedure,
+	userServiceListAllOrganizationsHandler := connect.NewUnaryHandler(
+		UserServiceListAllOrganizationsProcedure,
 		svc.ListAllOrganizations,
-		connect.WithSchema(userListAllOrganizationsMethodDescriptor),
+		connect.WithSchema(userServiceListAllOrganizationsMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	userDeleteOrganizationHandler := connect.NewUnaryHandler(
-		UserDeleteOrganizationProcedure,
+	userServiceDeleteOrganizationHandler := connect.NewUnaryHandler(
+		UserServiceDeleteOrganizationProcedure,
 		svc.DeleteOrganization,
-		connect.WithSchema(userDeleteOrganizationMethodDescriptor),
+		connect.WithSchema(userServiceDeleteOrganizationMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	userAddUsersToOrganizationHandler := connect.NewUnaryHandler(
-		UserAddUsersToOrganizationProcedure,
+	userServiceAddUsersToOrganizationHandler := connect.NewUnaryHandler(
+		UserServiceAddUsersToOrganizationProcedure,
 		svc.AddUsersToOrganization,
-		connect.WithSchema(userAddUsersToOrganizationMethodDescriptor),
+		connect.WithSchema(userServiceAddUsersToOrganizationMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	userRemoveUsersFromOrganizationHandler := connect.NewUnaryHandler(
-		UserRemoveUsersFromOrganizationProcedure,
+	userServiceRemoveUsersFromOrganizationHandler := connect.NewUnaryHandler(
+		UserServiceRemoveUsersFromOrganizationProcedure,
 		svc.RemoveUsersFromOrganization,
-		connect.WithSchema(userRemoveUsersFromOrganizationMethodDescriptor),
+		connect.WithSchema(userServiceRemoveUsersFromOrganizationMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/stately.User/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/stately.user.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case UserWhoamiProcedure:
-			userWhoamiHandler.ServeHTTP(w, r)
-		case UserGetCallerIdentityProcedure:
-			userGetCallerIdentityHandler.ServeHTTP(w, r)
-		case UserEnrollProcedure:
-			userEnrollHandler.ServeHTTP(w, r)
-		case UserEnrollMachineUserProcedure:
-			userEnrollMachineUserHandler.ServeHTTP(w, r)
-		case UserCreateProjectProcedure:
-			userCreateProjectHandler.ServeHTTP(w, r)
-		case UserDeleteProjectProcedure:
-			userDeleteProjectHandler.ServeHTTP(w, r)
-		case UserCreateOrganizationProcedure:
-			userCreateOrganizationHandler.ServeHTTP(w, r)
-		case UserListAllOrganizationsProcedure:
-			userListAllOrganizationsHandler.ServeHTTP(w, r)
-		case UserDeleteOrganizationProcedure:
-			userDeleteOrganizationHandler.ServeHTTP(w, r)
-		case UserAddUsersToOrganizationProcedure:
-			userAddUsersToOrganizationHandler.ServeHTTP(w, r)
-		case UserRemoveUsersFromOrganizationProcedure:
-			userRemoveUsersFromOrganizationHandler.ServeHTTP(w, r)
+		case UserServiceWhoamiProcedure:
+			userServiceWhoamiHandler.ServeHTTP(w, r)
+		case UserServiceGetCallerIdentityProcedure:
+			userServiceGetCallerIdentityHandler.ServeHTTP(w, r)
+		case UserServiceEnrollProcedure:
+			userServiceEnrollHandler.ServeHTTP(w, r)
+		case UserServiceEnrollMachineUserProcedure:
+			userServiceEnrollMachineUserHandler.ServeHTTP(w, r)
+		case UserServiceCreateProjectProcedure:
+			userServiceCreateProjectHandler.ServeHTTP(w, r)
+		case UserServiceDeleteProjectProcedure:
+			userServiceDeleteProjectHandler.ServeHTTP(w, r)
+		case UserServiceCreateOrganizationProcedure:
+			userServiceCreateOrganizationHandler.ServeHTTP(w, r)
+		case UserServiceListAllOrganizationsProcedure:
+			userServiceListAllOrganizationsHandler.ServeHTTP(w, r)
+		case UserServiceDeleteOrganizationProcedure:
+			userServiceDeleteOrganizationHandler.ServeHTTP(w, r)
+		case UserServiceAddUsersToOrganizationProcedure:
+			userServiceAddUsersToOrganizationHandler.ServeHTTP(w, r)
+		case UserServiceRemoveUsersFromOrganizationProcedure:
+			userServiceRemoveUsersFromOrganizationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedUserHandler returns CodeUnimplemented from all methods.
-type UnimplementedUserHandler struct{}
+// UnimplementedUserServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedUserServiceHandler struct{}
 
-func (UnimplementedUserHandler) Whoami(context.Context, *connect.Request[user.WhoamiRequest]) (*connect.Response[user.WhoamiResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.Whoami is not implemented"))
+func (UnimplementedUserServiceHandler) Whoami(context.Context, *connect.Request[user.WhoamiRequest]) (*connect.Response[user.WhoamiResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.Whoami is not implemented"))
 }
 
-func (UnimplementedUserHandler) GetCallerIdentity(context.Context, *connect.Request[user.GetCallerIdentityRequest]) (*connect.Response[user.GetCallerIdentityResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.GetCallerIdentity is not implemented"))
+func (UnimplementedUserServiceHandler) GetCallerIdentity(context.Context, *connect.Request[user.GetCallerIdentityRequest]) (*connect.Response[user.GetCallerIdentityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.GetCallerIdentity is not implemented"))
 }
 
-func (UnimplementedUserHandler) Enroll(context.Context, *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.Enroll is not implemented"))
+func (UnimplementedUserServiceHandler) Enroll(context.Context, *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.Enroll is not implemented"))
 }
 
-func (UnimplementedUserHandler) EnrollMachineUser(context.Context, *connect.Request[user.EnrollMachineUserRequest]) (*connect.Response[user.EnrollMachineUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.EnrollMachineUser is not implemented"))
+func (UnimplementedUserServiceHandler) EnrollMachineUser(context.Context, *connect.Request[user.EnrollMachineUserRequest]) (*connect.Response[user.EnrollMachineUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.EnrollMachineUser is not implemented"))
 }
 
-func (UnimplementedUserHandler) CreateProject(context.Context, *connect.Request[user.CreateProjectRequest]) (*connect.Response[user.CreateProjectResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.CreateProject is not implemented"))
+func (UnimplementedUserServiceHandler) CreateProject(context.Context, *connect.Request[user.CreateProjectRequest]) (*connect.Response[user.CreateProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.CreateProject is not implemented"))
 }
 
-func (UnimplementedUserHandler) DeleteProject(context.Context, *connect.Request[user.DeleteProjectRequest]) (*connect.Response[user.DeleteProjectResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.DeleteProject is not implemented"))
+func (UnimplementedUserServiceHandler) DeleteProject(context.Context, *connect.Request[user.DeleteProjectRequest]) (*connect.Response[user.DeleteProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.DeleteProject is not implemented"))
 }
 
-func (UnimplementedUserHandler) CreateOrganization(context.Context, *connect.Request[user.CreateOrganizationRequest]) (*connect.Response[user.CreateOrganizationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.CreateOrganization is not implemented"))
+func (UnimplementedUserServiceHandler) CreateOrganization(context.Context, *connect.Request[user.CreateOrganizationRequest]) (*connect.Response[user.CreateOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.CreateOrganization is not implemented"))
 }
 
-func (UnimplementedUserHandler) ListAllOrganizations(context.Context, *connect.Request[user.ListAllOrganizationsRequest]) (*connect.Response[user.ListAllOrganizationsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.ListAllOrganizations is not implemented"))
+func (UnimplementedUserServiceHandler) ListAllOrganizations(context.Context, *connect.Request[user.ListAllOrganizationsRequest]) (*connect.Response[user.ListAllOrganizationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.ListAllOrganizations is not implemented"))
 }
 
-func (UnimplementedUserHandler) DeleteOrganization(context.Context, *connect.Request[user.DeleteOrganizationRequest]) (*connect.Response[user.DeleteOrganizationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.DeleteOrganization is not implemented"))
+func (UnimplementedUserServiceHandler) DeleteOrganization(context.Context, *connect.Request[user.DeleteOrganizationRequest]) (*connect.Response[user.DeleteOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.DeleteOrganization is not implemented"))
 }
 
-func (UnimplementedUserHandler) AddUsersToOrganization(context.Context, *connect.Request[user.AddUsersToOrganizationRequest]) (*connect.Response[user.AddUsersToOrganizationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.AddUsersToOrganization is not implemented"))
+func (UnimplementedUserServiceHandler) AddUsersToOrganization(context.Context, *connect.Request[user.AddUsersToOrganizationRequest]) (*connect.Response[user.AddUsersToOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.AddUsersToOrganization is not implemented"))
 }
 
-func (UnimplementedUserHandler) RemoveUsersFromOrganization(context.Context, *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.User.RemoveUsersFromOrganization is not implemented"))
+func (UnimplementedUserServiceHandler) RemoveUsersFromOrganization(context.Context, *connect.Request[user.RemoveUsersFromOrganizationRequest]) (*connect.Response[user.RemoveUsersFromOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.RemoveUsersFromOrganization is not implemented"))
 }

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // parsedData is a simple tuple type to hold both the raw JSON data and the parsed item.
@@ -54,7 +54,7 @@ func setKeyPath(keyPath string, item *RawItem) (*RawItem, error) {
 	return item, nil
 }
 
-func setProtoMetadata(md *pb.ItemMetadata, item *RawItem) *RawItem {
+func setProtoMetadata(md *pbdata.ItemMetadata, item *RawItem) *RawItem {
 	if item == nil {
 		item = &RawItem{}
 	}
@@ -70,7 +70,7 @@ func setProtoMetadata(md *pb.ItemMetadata, item *RawItem) *RawItem {
 
 // protoToItem is for the egress boundary of our api/client. We allow users to output struct for json or
 // their well-formed proto message. This will fail if T is a string/[]byte as we discourage that usage.
-func protoToItem(protoItem *pb.Item) (*RawItem, error) {
+func protoToItem(protoItem *pbdata.Item) (*RawItem, error) {
 	var err error
 	var item *RawItem
 
@@ -107,9 +107,11 @@ func dataToProto(data any) (*parsedData[*structpb.Struct], []byte, error) {
 	jsonStruct := &parsedData[*structpb.Struct]{jsonParsed: &structpb.Struct{}}
 	switch v := data.(type) {
 	case string:
-		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("don't use strings as your data, please use map[string]any or a json annotated struct"))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument,
+			errors.New("don't use strings as your data, please use map[string]any or a json annotated struct"))
 	case []byte:
-		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("don't use []byte as your data, please use map[string]any or a json annotated struct"))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument,
+			errors.New("don't use []byte as your data, please use map[string]any or a json annotated struct"))
 	default:
 		// default we assume json?
 		jsonData, err := json.Marshal(v)

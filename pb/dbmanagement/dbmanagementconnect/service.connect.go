@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// ManagementName is the fully-qualified name of the Management service.
-	ManagementName = "stately.Management"
+	// ManagementServiceName is the fully-qualified name of the ManagementService service.
+	ManagementServiceName = "stately.dbmanagement.ManagementService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,125 +33,272 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// ManagementCreateStoreProcedure is the fully-qualified name of the Management's CreateStore RPC.
-	ManagementCreateStoreProcedure = "/stately.Management/CreateStore"
-	// ManagementDeleteStoreProcedure is the fully-qualified name of the Management's DeleteStore RPC.
-	ManagementDeleteStoreProcedure = "/stately.Management/DeleteStore"
+	// ManagementServiceCreateStoreProcedure is the fully-qualified name of the ManagementService's
+	// CreateStore RPC.
+	ManagementServiceCreateStoreProcedure = "/stately.dbmanagement.ManagementService/CreateStore"
+	// ManagementServiceDescribeStoreProcedure is the fully-qualified name of the ManagementService's
+	// DescribeStore RPC.
+	ManagementServiceDescribeStoreProcedure = "/stately.dbmanagement.ManagementService/DescribeStore"
+	// ManagementServiceUpdateStoreProcedure is the fully-qualified name of the ManagementService's
+	// UpdateStore RPC.
+	ManagementServiceUpdateStoreProcedure = "/stately.dbmanagement.ManagementService/UpdateStore"
+	// ManagementServiceDeleteStoreProcedure is the fully-qualified name of the ManagementService's
+	// DeleteStore RPC.
+	ManagementServiceDeleteStoreProcedure = "/stately.dbmanagement.ManagementService/DeleteStore"
+	// ManagementServiceDescribeBackupProcedure is the fully-qualified name of the ManagementService's
+	// DescribeBackup RPC.
+	ManagementServiceDescribeBackupProcedure = "/stately.dbmanagement.ManagementService/DescribeBackup"
+	// ManagementServiceRestoreStoreProcedure is the fully-qualified name of the ManagementService's
+	// RestoreStore RPC.
+	ManagementServiceRestoreStoreProcedure = "/stately.dbmanagement.ManagementService/RestoreStore"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	managementServiceDescriptor           = dbmanagement.File_dbmanagement_service_proto.Services().ByName("Management")
-	managementCreateStoreMethodDescriptor = managementServiceDescriptor.Methods().ByName("CreateStore")
-	managementDeleteStoreMethodDescriptor = managementServiceDescriptor.Methods().ByName("DeleteStore")
+	managementServiceServiceDescriptor              = dbmanagement.File_dbmanagement_service_proto.Services().ByName("ManagementService")
+	managementServiceCreateStoreMethodDescriptor    = managementServiceServiceDescriptor.Methods().ByName("CreateStore")
+	managementServiceDescribeStoreMethodDescriptor  = managementServiceServiceDescriptor.Methods().ByName("DescribeStore")
+	managementServiceUpdateStoreMethodDescriptor    = managementServiceServiceDescriptor.Methods().ByName("UpdateStore")
+	managementServiceDeleteStoreMethodDescriptor    = managementServiceServiceDescriptor.Methods().ByName("DeleteStore")
+	managementServiceDescribeBackupMethodDescriptor = managementServiceServiceDescriptor.Methods().ByName("DescribeBackup")
+	managementServiceRestoreStoreMethodDescriptor   = managementServiceServiceDescriptor.Methods().ByName("RestoreStore")
 )
 
-// ManagementClient is a client for the stately.Management service.
-type ManagementClient interface {
+// ManagementServiceClient is a client for the stately.dbmanagement.ManagementService service.
+type ManagementServiceClient interface {
 	// CreateStore makes a new store within your project. It will fail if you
 	// don't have permission to create stores in that project.
 	CreateStore(context.Context, *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error)
+	// DescribeStore gets information about a store. This includes Store-level configuration
+	// and features, Per-group configuration, and any item configurations interpreted from schema.
+	// In the future we may decide to also include schema information here, but for now
+	// that is a separate API call.
+	// This API will fail if the store does not exist or you don't have permission
+	// to describe stores in this project.
+	DescribeStore(context.Context, *connect.Request[dbmanagement.DescribeStoreRequest]) (*connect.Response[dbmanagement.DescribeStoreResponse], error)
+	// UpdateStore allows you to modify the configuration of a Store and Groups within it.
+	// This will fail if the store does not exist, or you do not have permission to update it.
+	UpdateStore(context.Context, *connect.Request[dbmanagement.UpdateStoreRequest]) (*connect.Response[dbmanagement.UpdateStoreResponse], error)
 	// DeleteStore schedules a store to be deleted, including all data within it.
 	// This operation takes some time so it returns a handle to an operation that
 	// you can check to see if it is complete. This will fail if the store does
 	// not exist, if the store is already being deleted, or if you do not have
 	// permission to delete stores.
 	DeleteStore(context.Context, *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error)
+	// DescribeBackup returns information about a store's backup options.
+	// These can be used to restore a store to a previous state using the RestoreStore operation.
+	DescribeBackup(context.Context, *connect.Request[dbmanagement.DescribeBackupRequest]) (*connect.Response[dbmanagement.DescribeBackupResponse], error)
+	// RestoreStore restores a store to a previous state using a backup.
+	RestoreStore(context.Context, *connect.Request[dbmanagement.RestoreStoreRequest]) (*connect.Response[dbmanagement.RestoreStoreResponse], error)
 }
 
-// NewManagementClient constructs a client for the stately.Management service. By default, it uses
-// the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// NewManagementServiceClient constructs a client for the stately.dbmanagement.ManagementService
+// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
+// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
+// the connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewManagementClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ManagementClient {
+func NewManagementServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ManagementServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	return &managementClient{
+	return &managementServiceClient{
 		createStore: connect.NewClient[dbmanagement.CreateStoreRequest, dbmanagement.CreateStoreResponse](
 			httpClient,
-			baseURL+ManagementCreateStoreProcedure,
-			connect.WithSchema(managementCreateStoreMethodDescriptor),
+			baseURL+ManagementServiceCreateStoreProcedure,
+			connect.WithSchema(managementServiceCreateStoreMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		describeStore: connect.NewClient[dbmanagement.DescribeStoreRequest, dbmanagement.DescribeStoreResponse](
+			httpClient,
+			baseURL+ManagementServiceDescribeStoreProcedure,
+			connect.WithSchema(managementServiceDescribeStoreMethodDescriptor),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		updateStore: connect.NewClient[dbmanagement.UpdateStoreRequest, dbmanagement.UpdateStoreResponse](
+			httpClient,
+			baseURL+ManagementServiceUpdateStoreProcedure,
+			connect.WithSchema(managementServiceUpdateStoreMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		deleteStore: connect.NewClient[dbmanagement.DeleteStoreRequest, dbmanagement.DeleteStoreResponse](
 			httpClient,
-			baseURL+ManagementDeleteStoreProcedure,
-			connect.WithSchema(managementDeleteStoreMethodDescriptor),
+			baseURL+ManagementServiceDeleteStoreProcedure,
+			connect.WithSchema(managementServiceDeleteStoreMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
+			connect.WithClientOptions(opts...),
+		),
+		describeBackup: connect.NewClient[dbmanagement.DescribeBackupRequest, dbmanagement.DescribeBackupResponse](
+			httpClient,
+			baseURL+ManagementServiceDescribeBackupProcedure,
+			connect.WithSchema(managementServiceDescribeBackupMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		restoreStore: connect.NewClient[dbmanagement.RestoreStoreRequest, dbmanagement.RestoreStoreResponse](
+			httpClient,
+			baseURL+ManagementServiceRestoreStoreProcedure,
+			connect.WithSchema(managementServiceRestoreStoreMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// managementClient implements ManagementClient.
-type managementClient struct {
-	createStore *connect.Client[dbmanagement.CreateStoreRequest, dbmanagement.CreateStoreResponse]
-	deleteStore *connect.Client[dbmanagement.DeleteStoreRequest, dbmanagement.DeleteStoreResponse]
+// managementServiceClient implements ManagementServiceClient.
+type managementServiceClient struct {
+	createStore    *connect.Client[dbmanagement.CreateStoreRequest, dbmanagement.CreateStoreResponse]
+	describeStore  *connect.Client[dbmanagement.DescribeStoreRequest, dbmanagement.DescribeStoreResponse]
+	updateStore    *connect.Client[dbmanagement.UpdateStoreRequest, dbmanagement.UpdateStoreResponse]
+	deleteStore    *connect.Client[dbmanagement.DeleteStoreRequest, dbmanagement.DeleteStoreResponse]
+	describeBackup *connect.Client[dbmanagement.DescribeBackupRequest, dbmanagement.DescribeBackupResponse]
+	restoreStore   *connect.Client[dbmanagement.RestoreStoreRequest, dbmanagement.RestoreStoreResponse]
 }
 
-// CreateStore calls stately.Management.CreateStore.
-func (c *managementClient) CreateStore(ctx context.Context, req *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error) {
+// CreateStore calls stately.dbmanagement.ManagementService.CreateStore.
+func (c *managementServiceClient) CreateStore(ctx context.Context, req *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error) {
 	return c.createStore.CallUnary(ctx, req)
 }
 
-// DeleteStore calls stately.Management.DeleteStore.
-func (c *managementClient) DeleteStore(ctx context.Context, req *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error) {
+// DescribeStore calls stately.dbmanagement.ManagementService.DescribeStore.
+func (c *managementServiceClient) DescribeStore(ctx context.Context, req *connect.Request[dbmanagement.DescribeStoreRequest]) (*connect.Response[dbmanagement.DescribeStoreResponse], error) {
+	return c.describeStore.CallUnary(ctx, req)
+}
+
+// UpdateStore calls stately.dbmanagement.ManagementService.UpdateStore.
+func (c *managementServiceClient) UpdateStore(ctx context.Context, req *connect.Request[dbmanagement.UpdateStoreRequest]) (*connect.Response[dbmanagement.UpdateStoreResponse], error) {
+	return c.updateStore.CallUnary(ctx, req)
+}
+
+// DeleteStore calls stately.dbmanagement.ManagementService.DeleteStore.
+func (c *managementServiceClient) DeleteStore(ctx context.Context, req *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error) {
 	return c.deleteStore.CallUnary(ctx, req)
 }
 
-// ManagementHandler is an implementation of the stately.Management service.
-type ManagementHandler interface {
+// DescribeBackup calls stately.dbmanagement.ManagementService.DescribeBackup.
+func (c *managementServiceClient) DescribeBackup(ctx context.Context, req *connect.Request[dbmanagement.DescribeBackupRequest]) (*connect.Response[dbmanagement.DescribeBackupResponse], error) {
+	return c.describeBackup.CallUnary(ctx, req)
+}
+
+// RestoreStore calls stately.dbmanagement.ManagementService.RestoreStore.
+func (c *managementServiceClient) RestoreStore(ctx context.Context, req *connect.Request[dbmanagement.RestoreStoreRequest]) (*connect.Response[dbmanagement.RestoreStoreResponse], error) {
+	return c.restoreStore.CallUnary(ctx, req)
+}
+
+// ManagementServiceHandler is an implementation of the stately.dbmanagement.ManagementService
+// service.
+type ManagementServiceHandler interface {
 	// CreateStore makes a new store within your project. It will fail if you
 	// don't have permission to create stores in that project.
 	CreateStore(context.Context, *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error)
+	// DescribeStore gets information about a store. This includes Store-level configuration
+	// and features, Per-group configuration, and any item configurations interpreted from schema.
+	// In the future we may decide to also include schema information here, but for now
+	// that is a separate API call.
+	// This API will fail if the store does not exist or you don't have permission
+	// to describe stores in this project.
+	DescribeStore(context.Context, *connect.Request[dbmanagement.DescribeStoreRequest]) (*connect.Response[dbmanagement.DescribeStoreResponse], error)
+	// UpdateStore allows you to modify the configuration of a Store and Groups within it.
+	// This will fail if the store does not exist, or you do not have permission to update it.
+	UpdateStore(context.Context, *connect.Request[dbmanagement.UpdateStoreRequest]) (*connect.Response[dbmanagement.UpdateStoreResponse], error)
 	// DeleteStore schedules a store to be deleted, including all data within it.
 	// This operation takes some time so it returns a handle to an operation that
 	// you can check to see if it is complete. This will fail if the store does
 	// not exist, if the store is already being deleted, or if you do not have
 	// permission to delete stores.
 	DeleteStore(context.Context, *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error)
+	// DescribeBackup returns information about a store's backup options.
+	// These can be used to restore a store to a previous state using the RestoreStore operation.
+	DescribeBackup(context.Context, *connect.Request[dbmanagement.DescribeBackupRequest]) (*connect.Response[dbmanagement.DescribeBackupResponse], error)
+	// RestoreStore restores a store to a previous state using a backup.
+	RestoreStore(context.Context, *connect.Request[dbmanagement.RestoreStoreRequest]) (*connect.Response[dbmanagement.RestoreStoreResponse], error)
 }
 
-// NewManagementHandler builds an HTTP handler from the service implementation. It returns the path
-// on which to mount the handler and the handler itself.
+// NewManagementServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewManagementHandler(svc ManagementHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	managementCreateStoreHandler := connect.NewUnaryHandler(
-		ManagementCreateStoreProcedure,
+func NewManagementServiceHandler(svc ManagementServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	managementServiceCreateStoreHandler := connect.NewUnaryHandler(
+		ManagementServiceCreateStoreProcedure,
 		svc.CreateStore,
-		connect.WithSchema(managementCreateStoreMethodDescriptor),
+		connect.WithSchema(managementServiceCreateStoreMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	managementDeleteStoreHandler := connect.NewUnaryHandler(
-		ManagementDeleteStoreProcedure,
+	managementServiceDescribeStoreHandler := connect.NewUnaryHandler(
+		ManagementServiceDescribeStoreProcedure,
+		svc.DescribeStore,
+		connect.WithSchema(managementServiceDescribeStoreMethodDescriptor),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	managementServiceUpdateStoreHandler := connect.NewUnaryHandler(
+		ManagementServiceUpdateStoreProcedure,
+		svc.UpdateStore,
+		connect.WithSchema(managementServiceUpdateStoreMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	managementServiceDeleteStoreHandler := connect.NewUnaryHandler(
+		ManagementServiceDeleteStoreProcedure,
 		svc.DeleteStore,
-		connect.WithSchema(managementDeleteStoreMethodDescriptor),
+		connect.WithSchema(managementServiceDeleteStoreMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/stately.Management/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	managementServiceDescribeBackupHandler := connect.NewUnaryHandler(
+		ManagementServiceDescribeBackupProcedure,
+		svc.DescribeBackup,
+		connect.WithSchema(managementServiceDescribeBackupMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	managementServiceRestoreStoreHandler := connect.NewUnaryHandler(
+		ManagementServiceRestoreStoreProcedure,
+		svc.RestoreStore,
+		connect.WithSchema(managementServiceRestoreStoreMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/stately.dbmanagement.ManagementService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case ManagementCreateStoreProcedure:
-			managementCreateStoreHandler.ServeHTTP(w, r)
-		case ManagementDeleteStoreProcedure:
-			managementDeleteStoreHandler.ServeHTTP(w, r)
+		case ManagementServiceCreateStoreProcedure:
+			managementServiceCreateStoreHandler.ServeHTTP(w, r)
+		case ManagementServiceDescribeStoreProcedure:
+			managementServiceDescribeStoreHandler.ServeHTTP(w, r)
+		case ManagementServiceUpdateStoreProcedure:
+			managementServiceUpdateStoreHandler.ServeHTTP(w, r)
+		case ManagementServiceDeleteStoreProcedure:
+			managementServiceDeleteStoreHandler.ServeHTTP(w, r)
+		case ManagementServiceDescribeBackupProcedure:
+			managementServiceDescribeBackupHandler.ServeHTTP(w, r)
+		case ManagementServiceRestoreStoreProcedure:
+			managementServiceRestoreStoreHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedManagementHandler returns CodeUnimplemented from all methods.
-type UnimplementedManagementHandler struct{}
+// UnimplementedManagementServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedManagementServiceHandler struct{}
 
-func (UnimplementedManagementHandler) CreateStore(context.Context, *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Management.CreateStore is not implemented"))
+func (UnimplementedManagementServiceHandler) CreateStore(context.Context, *connect.Request[dbmanagement.CreateStoreRequest]) (*connect.Response[dbmanagement.CreateStoreResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.CreateStore is not implemented"))
 }
 
-func (UnimplementedManagementHandler) DeleteStore(context.Context, *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Management.DeleteStore is not implemented"))
+func (UnimplementedManagementServiceHandler) DescribeStore(context.Context, *connect.Request[dbmanagement.DescribeStoreRequest]) (*connect.Response[dbmanagement.DescribeStoreResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.DescribeStore is not implemented"))
+}
+
+func (UnimplementedManagementServiceHandler) UpdateStore(context.Context, *connect.Request[dbmanagement.UpdateStoreRequest]) (*connect.Response[dbmanagement.UpdateStoreResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.UpdateStore is not implemented"))
+}
+
+func (UnimplementedManagementServiceHandler) DeleteStore(context.Context, *connect.Request[dbmanagement.DeleteStoreRequest]) (*connect.Response[dbmanagement.DeleteStoreResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.DeleteStore is not implemented"))
+}
+
+func (UnimplementedManagementServiceHandler) DescribeBackup(context.Context, *connect.Request[dbmanagement.DescribeBackupRequest]) (*connect.Response[dbmanagement.DescribeBackupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.DescribeBackup is not implemented"))
+}
+
+func (UnimplementedManagementServiceHandler) RestoreStore(context.Context, *connect.Request[dbmanagement.RestoreStoreRequest]) (*connect.Response[dbmanagement.RestoreStoreResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.dbmanagement.ManagementService.RestoreStore is not implemented"))
 }

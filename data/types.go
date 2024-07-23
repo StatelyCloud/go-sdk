@@ -1,13 +1,9 @@
 package data
 
 import (
+	"strconv"
 	"strings"
 )
-
-// IsAtomic indicates that all operations must succeed or none will (i.e. that they
-// are applied in a transaction), and that other operations will be serialized
-// ahead or behind this operation.
-type IsAtomic bool
 
 // AllowStale - If true, you're okay with getting a slightly stale item - that is, if you
 // had just changed an item and then call get or list on it, you might get the old
@@ -18,12 +14,24 @@ type AllowStale bool
 // AppendIDAssignment specifies the ID assignment strategy when Appending an Item.
 type AppendIDAssignment int
 
+func (a AppendIDAssignment) String() string {
+	switch a {
+	case AppendIDAssignmentSequence:
+		return "sequence"
+	case AppendIDAssignmentUUID:
+		return "uuid"
+	case AppendIDAssignmentRand53:
+		return "rand53"
+	default:
+		return "invalid (" + strconv.FormatInt(int64(a), 10) + ")"
+	}
+}
+
 const (
-	_ = AppendIDAssignment(iota)
 	// AppendIDAssignmentSequence will assign the item a monotonically increasing, contiguous ID
 	// that is unique *within the parent path and item type*. This is only valid
-	// for non-root items and when atomic = true (or within a transaction).
-	AppendIDAssignmentSequence
+	// for non-root items.
+	AppendIDAssignmentSequence AppendIDAssignment = iota + 1
 
 	// AppendIDAssignmentUUID will assign the item a globally unique 128-bit UUID. This will be
 	// encoded in the item key path as a binary ID. This is usable anywhere, in
@@ -38,19 +46,17 @@ const (
 	AppendIDAssignmentRand53
 )
 
-var appendIDAssignmentMap = map[string]AppendIDAssignment{
-	"sequence": AppendIDAssignmentSequence,
-	"uuid":     AppendIDAssignmentUUID,
-	"rand53":   AppendIDAssignmentRand53,
-}
-
 // NewAppendIDAssignment converts from a name to a AppendIDAssignment type.
 // An invalid value will return 0.
 func NewAppendIDAssignment(s string) AppendIDAssignment {
 	switch strings.ToLower(s) {
-	case "sequence", "uuid", "rand53":
-		return appendIDAssignmentMap[s]
-	default:
+	case "sequence":
 		return AppendIDAssignmentSequence
+	case "uuid":
+		return AppendIDAssignmentUUID
+	case "rand53":
+		return AppendIDAssignmentRand53
+	default:
+		return 0
 	}
 }

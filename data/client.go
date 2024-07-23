@@ -11,7 +11,7 @@ import (
 )
 
 type dataClient struct {
-	client  dataconnect.DataClient
+	client  dataconnect.DataServiceClient
 	storeID client.StoreID
 }
 
@@ -32,17 +32,15 @@ type Client interface {
 
 	// PutBatch adds one or more Items to the Store, or replaces the Items if they
 	// already exist at that path.
-	//
 	// This will fail if
-	//   - not all the PutData requests are under the same root item path.
 	//   - any of the PutData requests' write conditions fails.
-	//   - the caller does not have permission to create Items.
+	//   - the caller does not have permission to write to the underlying store.
 	//
 	// Additional Notes:
 	// All puts in the request are applied atomically - there are no partial
 	// successes. Data can be provided as either JSON, or as a proto encoded by a
 	// previously agreed upon schema, or by some combination of the two.
-	PutBatch(ctx context.Context, request PutBatchRequest) ([]*PutBatchResponse, error)
+	PutBatch(ctx context.Context, batch ...*PutData) ([]*RawItem, error)
 
 	// Put adds one Item to the Store, or replaces the Item if it
 	// already exists at that path.
@@ -66,7 +64,8 @@ type Client interface {
 	// items where you do not want to assign IDs yourself. The assigned IDs will
 	// be returned in the response. This operation will fail if the caller does
 	// not have permission to create Items.
-	AppendBatch(ctx context.Context, request AppendBatchRequest) ([]*AppendBatchResponse, error)
+	// All deletes in the request are applied atomically - there are no partial successes.
+	AppendBatch(ctx context.Context, request AppendBatchRequest) ([]*RawItem, error)
 
 	// Append one new Items to a parent path, automatically assigning
 	// an ID via one of several selectable ID generation strategies (not all
@@ -85,17 +84,14 @@ type Client interface {
 	) (*RawItem, error)
 
 	// DeleteBatch removes one or more Items from the Store by their full key paths. This
-	// will fail if any Item does not exist, if not all of the DeleteItem requests
-	// are under the same root item path, or if the caller does not have permission
-	// to delete Items. Tombstones will be left for deleted items for some
-	// predetermined time (TBD tombstone behavior). All deletes in the request are
-	// applied atomically - there are no partial successes.
-	DeleteBatch(ctx context.Context, request DeleteRequest) ([]*DeleteResponse, error)
+	// will fail if the caller does not have permission to delete Items.
+	// Tombstones will be left for deleted items for some predetermined time (TBD tombstone behavior).
+	// All deletes in the request are applied atomically - there are no partial successes.
+	DeleteBatch(ctx context.Context, request DeleteRequest) error
 
 	// Delete removes one Item from the Store by their full key paths. This
-	// will fail if the Item does not exist, or if the caller does not have permission
-	// to delete Items. Tombstones will be left for deleted items for some
-	// predetermined time (TBD tombstone behavior).
+	// if the caller does not have permission to delete Items.
+	// Tombstones will be left for deleted items for some predetermined time (TBD tombstone behavior).
 	Delete(ctx context.Context, itemPath string) error
 
 	// BeginList loads Items that start with a specified key path, subject to
@@ -135,17 +131,17 @@ type TransactionResults struct {
 	// PutResponse contains the full result of each Put operation. This only comes
 	// back with the transaction is finished message because full metadata isn't
 	// available until then.
-	PutResponse []*PutBatchResponse
+	PutResponse []*RawItem
 
 	// AppendResponse contains the full result of each Append operation. This only
 	// comes back with the TransactionFinished message because full metadata isn't
 	// available until then.
-	AppendResponse []*AppendBatchResponse
+	AppendResponse []*RawItem
 
 	// DeleteResponse contains the full result of each Delete operation. This only
 	// comes back with the TransactionFinished message because full metadata isn't
 	// available until then.
-	DeleteResponse []*DeleteResponse
+	DeleteResponse []string
 
 	// Did the commit finish (the alternative is that it was aborted/rolled back)
 	Committed bool
@@ -186,7 +182,7 @@ type Transaction interface {
 	//	}
 	//	err, token := iter.Token();
 	//	// handle err and token
-	BeginList(prefix string, options ...*ListOptions) (ListResponse[*RawItem], error)
+	BeginList(prefix string, options ...ListOptions) (ListResponse[*RawItem], error)
 
 	// ContinueList picks back up where this token left off. As with BeginList, you use the ListResponse to iterate over
 	// the stream of results.
@@ -215,7 +211,11 @@ func NewClient(appCtx context.Context, storeID client.StoreID, options ...*clien
 	}
 
 	return &dataClient{
-		client:  dataconnect.NewDataClient(opts.HTTPClient(), opts.Endpoint, connect.WithCodec(grpc.Codec{})),
+		client: dataconnect.NewDataServiceClient(
+			opts.HTTPClient(),
+			opts.Endpoint,
+			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
+		),
 		storeID: storeID,
 	}, nil
 }

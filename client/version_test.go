@@ -4,8 +4,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/StatelyCloud/go-sdk/client"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/StatelyCloud/go-sdk/client"
 )
 
 func TestGetVersion(t *testing.T) {

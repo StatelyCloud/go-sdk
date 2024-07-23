@@ -6,7 +6,6 @@ package data
 
 import (
 	fmt "fmt"
-	common "github.com/StatelyCloud/go-sdk/pb/common"
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -26,7 +25,6 @@ func (m *PutRequest) CloneVT() *PutRequest {
 	}
 	r := new(PutRequest)
 	r.StoreId = m.StoreId
-	r.Atomic = m.Atomic
 	if rhs := m.Puts; rhs != nil {
 		tmpContainer := make([]*PutItem, len(rhs))
 		for k, v := range rhs {
@@ -91,7 +89,6 @@ func (m *PutResult) CloneVT() *PutResult {
 	}
 	r := new(PutResult)
 	r.KeyPath = m.KeyPath
-	r.Error = m.Error.CloneVT()
 	r.Metadata = m.Metadata.CloneVT()
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
@@ -129,9 +126,6 @@ func (this *PutRequest) EqualVT(that *PutRequest) bool {
 				return false
 			}
 		}
-	}
-	if this.Atomic != that.Atomic {
-		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
@@ -204,9 +198,6 @@ func (this *PutResult) EqualVT(that *PutResult) bool {
 	if this.KeyPath != that.KeyPath {
 		return false
 	}
-	if !this.Error.EqualVT(that.Error) {
-		return false
-	}
 	if !this.Metadata.EqualVT(that.Metadata) {
 		return false
 	}
@@ -249,16 +240,6 @@ func (m *PutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.Atomic {
-		i--
-		if m.Atomic {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
 	}
 	if len(m.Puts) > 0 {
 		for iNdEx := len(m.Puts) - 1; iNdEx >= 0; iNdEx-- {
@@ -408,16 +389,6 @@ func (m *PutResult) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if m.Error != nil {
-		size, err := m.Error.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x12
-	}
 	if len(m.KeyPath) > 0 {
 		i -= len(m.KeyPath)
 		copy(dAtA[i:], m.KeyPath)
@@ -442,9 +413,6 @@ func (m *PutRequest) SizeVT() (n int) {
 			l = e.SizeVT()
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
-	}
-	if m.Atomic {
-		n += 2
 	}
 	n += len(m.unknownFields)
 	return n
@@ -488,10 +456,6 @@ func (m *PutResult) SizeVT() (n int) {
 	_ = l
 	l = len(m.KeyPath)
 	if l > 0 {
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.Error != nil {
-		l = m.Error.SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	if m.Metadata != nil {
@@ -584,26 +548,6 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Atomic", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Atomic = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -858,42 +802,6 @@ func (m *PutResult) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.KeyPath = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Error == nil {
-				m.Error = &common.OperationError{}
-			}
-			if err := m.Error.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

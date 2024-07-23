@@ -46,6 +46,7 @@ func (m *WhoamiResponse) CloneVT() *WhoamiResponse {
 	r.Email = m.Email
 	r.EnrollmentTime = m.EnrollmentTime
 	r.DisplayName = m.DisplayName
+	r.IsAdmin = m.IsAdmin
 	if rhs := m.Organizations; rhs != nil {
 		tmpContainer := make([]*OrganizationNode, len(rhs))
 		for k, v := range rhs {
@@ -117,7 +118,15 @@ func (m *StoreNode) CloneVT() *StoreNode {
 		return (*StoreNode)(nil)
 	}
 	r := new(StoreNode)
-	r.Store = m.Store.CloneVT()
+	if rhs := m.Store; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface {
+			CloneVT() *dbmanagement.StoreInfo
+		}); ok {
+			r.Store = vtpb.CloneVT()
+		} else {
+			r.Store = proto.Clone(rhs).(*dbmanagement.StoreInfo)
+		}
+	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -182,6 +191,9 @@ func (this *WhoamiResponse) EqualVT(that *WhoamiResponse) bool {
 				return false
 			}
 		}
+	}
+	if this.IsAdmin != that.IsAdmin {
+		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
@@ -271,7 +283,13 @@ func (this *StoreNode) EqualVT(that *StoreNode) bool {
 	} else if this == nil || that == nil {
 		return false
 	}
-	if !this.Store.EqualVT(that.Store) {
+	if equal, ok := interface{}(this.Store).(interface {
+		EqualVT(*dbmanagement.StoreInfo) bool
+	}); ok {
+		if !equal.EqualVT(that.Store) {
+			return false
+		}
+	} else if !proto.Equal(this.Store, that.Store) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -346,6 +364,16 @@ func (m *WhoamiResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.IsAdmin {
+		i--
+		if m.IsAdmin {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
 	}
 	if len(m.Organizations) > 0 {
 		for iNdEx := len(m.Organizations) - 1; iNdEx >= 0; iNdEx-- {
@@ -534,12 +562,24 @@ func (m *StoreNode) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.unknownFields)
 	}
 	if m.Store != nil {
-		size, err := m.Store.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
+		if vtmsg, ok := interface{}(m.Store).(interface {
+			MarshalToSizedBufferVT([]byte) (int, error)
+		}); ok {
+			size, err := vtmsg.MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+		} else {
+			encoded, err := proto.Marshal(m.Store)
+			if err != nil {
+				return 0, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
 		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -585,6 +625,9 @@ func (m *WhoamiResponse) SizeVT() (n int) {
 			l = e.SizeVT()
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
+	}
+	if m.IsAdmin {
+		n += 2
 	}
 	n += len(m.unknownFields)
 	return n
@@ -637,7 +680,13 @@ func (m *StoreNode) SizeVT() (n int) {
 	var l int
 	_ = l
 	if m.Store != nil {
-		l = m.Store.SizeVT()
+		if size, ok := interface{}(m.Store).(interface {
+			SizeVT() int
+		}); ok {
+			l = size.SizeVT()
+		} else {
+			l = proto.Size(m.Store)
+		}
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
@@ -892,6 +941,26 @@ func (m *WhoamiResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsAdmin", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsAdmin = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -1217,8 +1286,16 @@ func (m *StoreNode) UnmarshalVT(dAtA []byte) error {
 			if m.Store == nil {
 				m.Store = &dbmanagement.StoreInfo{}
 			}
-			if err := m.Store.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+			if unmarshal, ok := interface{}(m.Store).(interface {
+				UnmarshalVT([]byte) error
+			}); ok {
+				if err := unmarshal.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				if err := proto.Unmarshal(dAtA[iNdEx:postIndex], m.Store); err != nil {
+					return err
+				}
 			}
 			iNdEx = postIndex
 		default:

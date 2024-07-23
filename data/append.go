@@ -7,8 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/StatelyCloud/go-sdk/internal"
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // Append adds one Item to a parent path, automatically assigning
@@ -40,18 +39,13 @@ func (c *dataClient) Append(
 	if err != nil {
 		return nil, err
 	}
-	response := responses[0]
-	return response.RawItem, response.Error
+	return responses[0], nil
 }
 
 // AppendBatchRequest allows you to specify more than 1 item you wish to append to any group.
 type AppendBatchRequest struct {
 	// AppendRequests allows you to set
 	AppendRequests []*AppendRequest
-	// (option) Atomic indicates that all deletes must succeed or none will (i.e. that they
-	// are applied in a transaction), and that other operations will be serialized
-	// ahead or behind this operation.
-	Atomic IsAtomic
 	// ParentPath is the path all these items share.
 	// Example: [/state-washington/city-seattle]/[person]-<id> the first group is the ParentPath, and the second is the ItemType
 	ParentPath string
@@ -68,12 +62,6 @@ type AppendRequest struct {
 	IDAssignment AppendIDAssignment
 }
 
-// AppendBatchResponse is a tuple of *RawItem[T] OR error. If there's an error, RawItem will be nil with a description of why.
-type AppendBatchResponse struct {
-	RawItem *RawItem
-	Error   error
-}
-
 // AppendBatch adds one or more new Items to a parent path, automatically assigning
 // IDs via one of several selectable ID generation strategies (not all
 // strategies may be available to all store configurations or path types).
@@ -86,67 +74,50 @@ type AppendBatchResponse struct {
 func (c *dataClient) AppendBatch(
 	ctx context.Context,
 	batchRequest AppendBatchRequest,
-) ([]*AppendBatchResponse, error) {
+) ([]*RawItem, error) {
 	appendRequests := batchRequest.AppendRequests
 	appendItems, appendData, err := mapAppendRequest(appendRequests)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := c.client.Append(ctx, connect.NewRequest(&pb.AppendRequest{
+	response, err := c.client.Append(ctx, connect.NewRequest(&pbdata.AppendRequest{
 		StoreId:    uint64(c.storeID),
 		ParentPath: batchRequest.ParentPath,
 		Appends:    appendItems,
-		Atomic:     bool(batchRequest.Atomic),
 	}))
 	if err != nil {
 		return nil, err
 	}
 
-	responses := mapAppendResponses(response.Msg.GetResults(), appendData)
-
-	return responses, nil
+	return mapAppendResponses(response.Msg.GetResults(), appendData)
 }
 
 // shared between transactional and non-transactional append.
 func mapAppendResponses(
-	response []*pb.AppendItemResult,
+	response []*pbdata.AppendItemResult,
 	appendData []*parsedData[*structpb.Struct],
-) []*AppendBatchResponse {
-	responses := make([]*AppendBatchResponse, len(response))
+) ([]*RawItem, error) {
+	responses := make([]*RawItem, len(response))
 	for i, v := range response {
 		item := &RawItem{
 			JSONData: appendData[i].getJSONData(),
 		}
 
-		if err := v.GetError(); err != nil {
-			responses[i] = &AppendBatchResponse{
-				RawItem: item, // this item is partially filled but might be useful for debugging?
-				Error:   internal.MapProtoError(err),
-			}
-			continue
-		}
-
 		item = setProtoMetadata(v.GetMetadata(), item)
 		item, err := setKeyPath(v.GetKeyPath(), item)
 		if err != nil {
-			responses[i] = &AppendBatchResponse{
-				RawItem: item, // this item is partially filled but might be useful for debugging?
-				Error:   err,
-			}
-			continue
+			return nil, err
 		}
 
-		responses[i] = &AppendBatchResponse{
-			RawItem: item,
-		}
+		responses[i] = item
 	}
-	return responses
+	return responses, nil
 }
 
 // shared between transactional and non-transactional append.
-func mapAppendRequest(requests []*AppendRequest) ([]*pb.AppendItem, []*parsedData[*structpb.Struct], error) {
-	appendItems := make([]*pb.AppendItem, len(requests))
+func mapAppendRequest(requests []*AppendRequest) ([]*pbdata.AppendItem, []*parsedData[*structpb.Struct], error) {
+	appendItems := make([]*pbdata.AppendItem, len(requests))
 	jsonData := make([]*parsedData[*structpb.Struct], len(requests))
 	for i, v := range requests {
 		if v.IDAssignment == AppendIDAssignment(0) {
@@ -158,9 +129,9 @@ func mapAppendRequest(requests []*AppendRequest) ([]*pb.AppendItem, []*parsedDat
 			return nil, nil, err
 		}
 		jsonData[i] = jsonStruct
-		appendItems[i] = &pb.AppendItem{
+		appendItems[i] = &pbdata.AppendItem{
 			ItemType:     v.ItemType,
-			IdAssignment: pb.AppendItem_IDAssignment(v.IDAssignment),
+			IdAssignment: pbdata.AppendItem_IDAssignment(v.IDAssignment),
 			Json:         jsonStruct.getJSONParsed(),
 			Proto:        protoMsg,
 		}

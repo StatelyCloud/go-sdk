@@ -23,7 +23,8 @@ type ListResponder interface {
 
 // GetListResponse returns the ListResponder from the TransactionListResponse.
 func (t *TransactionListResponse) GetListResponse() ListResponder {
-	switch v := t.Response.(type) {
+	// Note: make sure to access t.Response via the nil-safe accessor.
+	switch v := t.GetResponse().(type) {
 	case *TransactionListResponse_Result:
 		return v.Result
 	case *TransactionListResponse_Finished:
@@ -34,7 +35,8 @@ func (t *TransactionListResponse) GetListResponse() ListResponder {
 
 // GetListResponse returns the ListResponder from the ListResponse.
 func (t *ListResponse) GetListResponse() ListResponder {
-	switch v := t.Response.(type) {
+	// Note: make sure to access t.Response via the nil-safe accessor.
+	switch v := t.GetResponse().(type) {
 	case *ListResponse_Result:
 		return v.Result
 	case *ListResponse_Finished:

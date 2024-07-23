@@ -4,15 +4,16 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
+	"github.com/planetscale/vtprotobuf/codec/grpc"
+
 	"github.com/StatelyCloud/go-sdk/client"
 	"github.com/StatelyCloud/go-sdk/dbmanagement"
-	pb "github.com/StatelyCloud/go-sdk/pb/user"
+	pbuser "github.com/StatelyCloud/go-sdk/pb/user"
 	"github.com/StatelyCloud/go-sdk/pb/user/userconnect"
-	"github.com/planetscale/vtprotobuf/codec/grpc"
 )
 
 type clientImpl struct {
-	client userconnect.UserClient
+	client userconnect.UserServiceClient
 }
 
 // Client is a Stately user client that performs user management operations.
@@ -53,12 +54,12 @@ func NewClient(appCtx context.Context, options ...*client.Options) (Client, erro
 	}
 
 	return &clientImpl{
-		client: userconnect.NewUserClient(opts.HTTPClient(), opts.Endpoint, connect.WithCodec(grpc.Codec{})),
+		client: userconnect.NewUserServiceClient(opts.HTTPClient(), opts.Endpoint, connect.WithCodec(grpc.Codec{})),
 	}, nil
 }
 
 func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
-	response, err := c.client.Whoami(appCtx, connect.NewRequest(&pb.WhoamiRequest{}))
+	response, err := c.client.Whoami(appCtx, connect.NewRequest(&pbuser.WhoamiRequest{}))
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +107,7 @@ func (c *clientImpl) EnrollMachineUser(
 	displayName string,
 	organizationID client.OrganizationID,
 ) error {
-	_, err := c.client.EnrollMachineUser(ctx, connect.NewRequest(&pb.EnrollMachineUserRequest{
+	_, err := c.client.EnrollMachineUser(ctx, connect.NewRequest(&pbuser.EnrollMachineUserRequest{
 		OAuthSubject:   oAuthSubject,
 		DisplayName:    displayName,
 		OrganizationId: uint64(organizationID),
@@ -120,7 +121,7 @@ func (c *clientImpl) CreateOrganization(
 	name string,
 	addCaller bool,
 ) (*OrganizationInfo, error) {
-	response, err := c.client.CreateOrganization(ctx, connect.NewRequest(&pb.CreateOrganizationRequest{
+	response, err := c.client.CreateOrganization(ctx, connect.NewRequest(&pbuser.CreateOrganizationRequest{
 		Name:                name,
 		DoNotAddCurrentUser: !addCaller,
 	}))

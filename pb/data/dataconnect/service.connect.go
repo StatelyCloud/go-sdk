@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// DataName is the fully-qualified name of the Data service.
-	DataName = "stately.Data"
+	// DataServiceName is the fully-qualified name of the DataService service.
+	DataServiceName = "stately.data.DataService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,49 +33,48 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// DataPutProcedure is the fully-qualified name of the Data's Put RPC.
-	DataPutProcedure = "/stately.Data/Put"
-	// DataGetProcedure is the fully-qualified name of the Data's Get RPC.
-	DataGetProcedure = "/stately.Data/Get"
-	// DataDeleteProcedure is the fully-qualified name of the Data's Delete RPC.
-	DataDeleteProcedure = "/stately.Data/Delete"
-	// DataAppendProcedure is the fully-qualified name of the Data's Append RPC.
-	DataAppendProcedure = "/stately.Data/Append"
-	// DataBeginListProcedure is the fully-qualified name of the Data's BeginList RPC.
-	DataBeginListProcedure = "/stately.Data/BeginList"
-	// DataContinueListProcedure is the fully-qualified name of the Data's ContinueList RPC.
-	DataContinueListProcedure = "/stately.Data/ContinueList"
-	// DataSyncListProcedure is the fully-qualified name of the Data's SyncList RPC.
-	DataSyncListProcedure = "/stately.Data/SyncList"
-	// DataTransactionProcedure is the fully-qualified name of the Data's Transaction RPC.
-	DataTransactionProcedure = "/stately.Data/Transaction"
-	// DataScanRootPathsProcedure is the fully-qualified name of the Data's ScanRootPaths RPC.
-	DataScanRootPathsProcedure = "/stately.Data/ScanRootPaths"
+	// DataServicePutProcedure is the fully-qualified name of the DataService's Put RPC.
+	DataServicePutProcedure = "/stately.data.DataService/Put"
+	// DataServiceGetProcedure is the fully-qualified name of the DataService's Get RPC.
+	DataServiceGetProcedure = "/stately.data.DataService/Get"
+	// DataServiceDeleteProcedure is the fully-qualified name of the DataService's Delete RPC.
+	DataServiceDeleteProcedure = "/stately.data.DataService/Delete"
+	// DataServiceAppendProcedure is the fully-qualified name of the DataService's Append RPC.
+	DataServiceAppendProcedure = "/stately.data.DataService/Append"
+	// DataServiceBeginListProcedure is the fully-qualified name of the DataService's BeginList RPC.
+	DataServiceBeginListProcedure = "/stately.data.DataService/BeginList"
+	// DataServiceContinueListProcedure is the fully-qualified name of the DataService's ContinueList
+	// RPC.
+	DataServiceContinueListProcedure = "/stately.data.DataService/ContinueList"
+	// DataServiceSyncListProcedure is the fully-qualified name of the DataService's SyncList RPC.
+	DataServiceSyncListProcedure = "/stately.data.DataService/SyncList"
+	// DataServiceTransactionProcedure is the fully-qualified name of the DataService's Transaction RPC.
+	DataServiceTransactionProcedure = "/stately.data.DataService/Transaction"
+	// DataServiceScanRootPathsProcedure is the fully-qualified name of the DataService's ScanRootPaths
+	// RPC.
+	DataServiceScanRootPathsProcedure = "/stately.data.DataService/ScanRootPaths"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	dataServiceDescriptor             = data.File_data_service_proto.Services().ByName("Data")
-	dataPutMethodDescriptor           = dataServiceDescriptor.Methods().ByName("Put")
-	dataGetMethodDescriptor           = dataServiceDescriptor.Methods().ByName("Get")
-	dataDeleteMethodDescriptor        = dataServiceDescriptor.Methods().ByName("Delete")
-	dataAppendMethodDescriptor        = dataServiceDescriptor.Methods().ByName("Append")
-	dataBeginListMethodDescriptor     = dataServiceDescriptor.Methods().ByName("BeginList")
-	dataContinueListMethodDescriptor  = dataServiceDescriptor.Methods().ByName("ContinueList")
-	dataSyncListMethodDescriptor      = dataServiceDescriptor.Methods().ByName("SyncList")
-	dataTransactionMethodDescriptor   = dataServiceDescriptor.Methods().ByName("Transaction")
-	dataScanRootPathsMethodDescriptor = dataServiceDescriptor.Methods().ByName("ScanRootPaths")
+	dataServiceServiceDescriptor             = data.File_data_service_proto.Services().ByName("DataService")
+	dataServicePutMethodDescriptor           = dataServiceServiceDescriptor.Methods().ByName("Put")
+	dataServiceGetMethodDescriptor           = dataServiceServiceDescriptor.Methods().ByName("Get")
+	dataServiceDeleteMethodDescriptor        = dataServiceServiceDescriptor.Methods().ByName("Delete")
+	dataServiceAppendMethodDescriptor        = dataServiceServiceDescriptor.Methods().ByName("Append")
+	dataServiceBeginListMethodDescriptor     = dataServiceServiceDescriptor.Methods().ByName("BeginList")
+	dataServiceContinueListMethodDescriptor  = dataServiceServiceDescriptor.Methods().ByName("ContinueList")
+	dataServiceSyncListMethodDescriptor      = dataServiceServiceDescriptor.Methods().ByName("SyncList")
+	dataServiceTransactionMethodDescriptor   = dataServiceServiceDescriptor.Methods().ByName("Transaction")
+	dataServiceScanRootPathsMethodDescriptor = dataServiceServiceDescriptor.Methods().ByName("ScanRootPaths")
 )
 
-// DataClient is a client for the stately.Data service.
-type DataClient interface {
+// DataServiceClient is a client for the stately.data.DataService service.
+type DataServiceClient interface {
 	// Put adds one or more Items to the Store, or replaces the Items if they
 	// already exist at that path. This will fail if any of the PutItem requests'
 	// write conditions fails, or if the caller does not have permission to create
-	// Items. You may choose whether all puts in the request are applied
-	// atomically (in a transaction) or not, though some store configurations may
-	// always apply the whole batch in a transaction (such as in version-tracking
-	// stores). The status of each Put operation is returned in the response. Data
+	// Items. Puts are always applied atomically; all will fail or all will succeed. Data
 	// can be provided as either JSON, or as a proto encoded by a previously
 	// agreed upon schema, or by some combination of the two.
 	Put(context.Context, *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error)
@@ -87,10 +86,8 @@ type DataClient interface {
 	// Delete removes one or more Items from the Store by their full key paths.
 	// This will fail if the caller does not have permission to delete Items. In
 	// version-tracking stores, tombstones will be left for deleted items for some
-	// predetermined time. You may choose whether all deletes in the request are
-	// applied atomically (in a transaction) or not, though some store types may
-	// always apply the whole batch in a transaction (such as in version-tracking
-	// stores). The status of each Delete operation is returned in the response.
+	// predetermined time. Deletes are always applied atomically; all will fail or
+	// all will succeed.
 	Delete(context.Context, *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error)
 	// Append adds one or more new Items to a parent path, automatically assigning
 	// IDs via one of several selectable ID generation strategies (not all
@@ -109,6 +106,7 @@ type DataClient interface {
 	// API that you can then pass to ContinueList to expand the result set, or to
 	// SyncList to get updates within the result set. This can fail if the caller
 	// does not have permission to read Items.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	BeginList(context.Context, *connect.Request[data.BeginListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error)
 	// ContinueList takes the token from a BeginList call and returns the next
 	// "page" of results based on the original query parameters and pagination
@@ -122,6 +120,7 @@ type DataClient interface {
 	// parallel. Calls to ContinueList are tied to the authorization of the
 	// original BeginList call, so if the original BeginList call was allowed,
 	// ContinueList with its token should also be allowed.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	ContinueList(context.Context, *connect.Request[data.ContinueListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error)
 	// SyncList returns all changes to Items within the result set of a previous
 	// List operation. For all Items within the result set that were modified, it
@@ -156,82 +155,82 @@ type DataClient interface {
 	ScanRootPaths(context.Context, *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error)
 }
 
-// NewDataClient constructs a client for the stately.Data service. By default, it uses the Connect
-// protocol with the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed
-// requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// NewDataServiceClient constructs a client for the stately.data.DataService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewDataClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DataClient {
+func NewDataServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DataServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	return &dataClient{
+	return &dataServiceClient{
 		put: connect.NewClient[data.PutRequest, data.PutResponse](
 			httpClient,
-			baseURL+DataPutProcedure,
-			connect.WithSchema(dataPutMethodDescriptor),
+			baseURL+DataServicePutProcedure,
+			connect.WithSchema(dataServicePutMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		get: connect.NewClient[data.GetRequest, data.GetResponse](
 			httpClient,
-			baseURL+DataGetProcedure,
-			connect.WithSchema(dataGetMethodDescriptor),
+			baseURL+DataServiceGetProcedure,
+			connect.WithSchema(dataServiceGetMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		delete: connect.NewClient[data.DeleteRequest, data.DeleteResponse](
 			httpClient,
-			baseURL+DataDeleteProcedure,
-			connect.WithSchema(dataDeleteMethodDescriptor),
+			baseURL+DataServiceDeleteProcedure,
+			connect.WithSchema(dataServiceDeleteMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		append: connect.NewClient[data.AppendRequest, data.AppendResponse](
 			httpClient,
-			baseURL+DataAppendProcedure,
-			connect.WithSchema(dataAppendMethodDescriptor),
+			baseURL+DataServiceAppendProcedure,
+			connect.WithSchema(dataServiceAppendMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		beginList: connect.NewClient[data.BeginListRequest, data.ListResponse](
 			httpClient,
-			baseURL+DataBeginListProcedure,
-			connect.WithSchema(dataBeginListMethodDescriptor),
+			baseURL+DataServiceBeginListProcedure,
+			connect.WithSchema(dataServiceBeginListMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		continueList: connect.NewClient[data.ContinueListRequest, data.ListResponse](
 			httpClient,
-			baseURL+DataContinueListProcedure,
-			connect.WithSchema(dataContinueListMethodDescriptor),
+			baseURL+DataServiceContinueListProcedure,
+			connect.WithSchema(dataServiceContinueListMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		syncList: connect.NewClient[data.SyncListRequest, data.SyncListResponse](
 			httpClient,
-			baseURL+DataSyncListProcedure,
-			connect.WithSchema(dataSyncListMethodDescriptor),
+			baseURL+DataServiceSyncListProcedure,
+			connect.WithSchema(dataServiceSyncListMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 		transaction: connect.NewClient[data.TransactionRequest, data.TransactionResponse](
 			httpClient,
-			baseURL+DataTransactionProcedure,
-			connect.WithSchema(dataTransactionMethodDescriptor),
+			baseURL+DataServiceTransactionProcedure,
+			connect.WithSchema(dataServiceTransactionMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		scanRootPaths: connect.NewClient[data.ScanRootPathsRequest, data.ScanRootPathsResponse](
 			httpClient,
-			baseURL+DataScanRootPathsProcedure,
-			connect.WithSchema(dataScanRootPathsMethodDescriptor),
+			baseURL+DataServiceScanRootPathsProcedure,
+			connect.WithSchema(dataServiceScanRootPathsMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// dataClient implements DataClient.
-type dataClient struct {
+// dataServiceClient implements DataServiceClient.
+type dataServiceClient struct {
 	put           *connect.Client[data.PutRequest, data.PutResponse]
 	get           *connect.Client[data.GetRequest, data.GetResponse]
 	delete        *connect.Client[data.DeleteRequest, data.DeleteResponse]
@@ -243,60 +242,57 @@ type dataClient struct {
 	scanRootPaths *connect.Client[data.ScanRootPathsRequest, data.ScanRootPathsResponse]
 }
 
-// Put calls stately.Data.Put.
-func (c *dataClient) Put(ctx context.Context, req *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error) {
+// Put calls stately.data.DataService.Put.
+func (c *dataServiceClient) Put(ctx context.Context, req *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error) {
 	return c.put.CallUnary(ctx, req)
 }
 
-// Get calls stately.Data.Get.
-func (c *dataClient) Get(ctx context.Context, req *connect.Request[data.GetRequest]) (*connect.Response[data.GetResponse], error) {
+// Get calls stately.data.DataService.Get.
+func (c *dataServiceClient) Get(ctx context.Context, req *connect.Request[data.GetRequest]) (*connect.Response[data.GetResponse], error) {
 	return c.get.CallUnary(ctx, req)
 }
 
-// Delete calls stately.Data.Delete.
-func (c *dataClient) Delete(ctx context.Context, req *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error) {
+// Delete calls stately.data.DataService.Delete.
+func (c *dataServiceClient) Delete(ctx context.Context, req *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error) {
 	return c.delete.CallUnary(ctx, req)
 }
 
-// Append calls stately.Data.Append.
-func (c *dataClient) Append(ctx context.Context, req *connect.Request[data.AppendRequest]) (*connect.Response[data.AppendResponse], error) {
+// Append calls stately.data.DataService.Append.
+func (c *dataServiceClient) Append(ctx context.Context, req *connect.Request[data.AppendRequest]) (*connect.Response[data.AppendResponse], error) {
 	return c.append.CallUnary(ctx, req)
 }
 
-// BeginList calls stately.Data.BeginList.
-func (c *dataClient) BeginList(ctx context.Context, req *connect.Request[data.BeginListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error) {
+// BeginList calls stately.data.DataService.BeginList.
+func (c *dataServiceClient) BeginList(ctx context.Context, req *connect.Request[data.BeginListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error) {
 	return c.beginList.CallServerStream(ctx, req)
 }
 
-// ContinueList calls stately.Data.ContinueList.
-func (c *dataClient) ContinueList(ctx context.Context, req *connect.Request[data.ContinueListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error) {
+// ContinueList calls stately.data.DataService.ContinueList.
+func (c *dataServiceClient) ContinueList(ctx context.Context, req *connect.Request[data.ContinueListRequest]) (*connect.ServerStreamForClient[data.ListResponse], error) {
 	return c.continueList.CallServerStream(ctx, req)
 }
 
-// SyncList calls stately.Data.SyncList.
-func (c *dataClient) SyncList(ctx context.Context, req *connect.Request[data.SyncListRequest]) (*connect.ServerStreamForClient[data.SyncListResponse], error) {
+// SyncList calls stately.data.DataService.SyncList.
+func (c *dataServiceClient) SyncList(ctx context.Context, req *connect.Request[data.SyncListRequest]) (*connect.ServerStreamForClient[data.SyncListResponse], error) {
 	return c.syncList.CallServerStream(ctx, req)
 }
 
-// Transaction calls stately.Data.Transaction.
-func (c *dataClient) Transaction(ctx context.Context) *connect.BidiStreamForClient[data.TransactionRequest, data.TransactionResponse] {
+// Transaction calls stately.data.DataService.Transaction.
+func (c *dataServiceClient) Transaction(ctx context.Context) *connect.BidiStreamForClient[data.TransactionRequest, data.TransactionResponse] {
 	return c.transaction.CallBidiStream(ctx)
 }
 
-// ScanRootPaths calls stately.Data.ScanRootPaths.
-func (c *dataClient) ScanRootPaths(ctx context.Context, req *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error) {
+// ScanRootPaths calls stately.data.DataService.ScanRootPaths.
+func (c *dataServiceClient) ScanRootPaths(ctx context.Context, req *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error) {
 	return c.scanRootPaths.CallUnary(ctx, req)
 }
 
-// DataHandler is an implementation of the stately.Data service.
-type DataHandler interface {
+// DataServiceHandler is an implementation of the stately.data.DataService service.
+type DataServiceHandler interface {
 	// Put adds one or more Items to the Store, or replaces the Items if they
 	// already exist at that path. This will fail if any of the PutItem requests'
 	// write conditions fails, or if the caller does not have permission to create
-	// Items. You may choose whether all puts in the request are applied
-	// atomically (in a transaction) or not, though some store configurations may
-	// always apply the whole batch in a transaction (such as in version-tracking
-	// stores). The status of each Put operation is returned in the response. Data
+	// Items. Puts are always applied atomically; all will fail or all will succeed. Data
 	// can be provided as either JSON, or as a proto encoded by a previously
 	// agreed upon schema, or by some combination of the two.
 	Put(context.Context, *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error)
@@ -308,10 +304,8 @@ type DataHandler interface {
 	// Delete removes one or more Items from the Store by their full key paths.
 	// This will fail if the caller does not have permission to delete Items. In
 	// version-tracking stores, tombstones will be left for deleted items for some
-	// predetermined time. You may choose whether all deletes in the request are
-	// applied atomically (in a transaction) or not, though some store types may
-	// always apply the whole batch in a transaction (such as in version-tracking
-	// stores). The status of each Delete operation is returned in the response.
+	// predetermined time. Deletes are always applied atomically; all will fail or
+	// all will succeed.
 	Delete(context.Context, *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error)
 	// Append adds one or more new Items to a parent path, automatically assigning
 	// IDs via one of several selectable ID generation strategies (not all
@@ -330,6 +324,7 @@ type DataHandler interface {
 	// API that you can then pass to ContinueList to expand the result set, or to
 	// SyncList to get updates within the result set. This can fail if the caller
 	// does not have permission to read Items.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	BeginList(context.Context, *connect.Request[data.BeginListRequest], *connect.ServerStream[data.ListResponse]) error
 	// ContinueList takes the token from a BeginList call and returns the next
 	// "page" of results based on the original query parameters and pagination
@@ -343,6 +338,7 @@ type DataHandler interface {
 	// parallel. Calls to ContinueList are tied to the authorization of the
 	// original BeginList call, so if the original BeginList call was allowed,
 	// ContinueList with its token should also be allowed.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	ContinueList(context.Context, *connect.Request[data.ContinueListRequest], *connect.ServerStream[data.ListResponse]) error
 	// SyncList returns all changes to Items within the result set of a previous
 	// List operation. For all Items within the result set that were modified, it
@@ -377,134 +373,134 @@ type DataHandler interface {
 	ScanRootPaths(context.Context, *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error)
 }
 
-// NewDataHandler builds an HTTP handler from the service implementation. It returns the path on
-// which to mount the handler and the handler itself.
+// NewDataServiceHandler builds an HTTP handler from the service implementation. It returns the path
+// on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewDataHandler(svc DataHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	dataPutHandler := connect.NewUnaryHandler(
-		DataPutProcedure,
+func NewDataServiceHandler(svc DataServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	dataServicePutHandler := connect.NewUnaryHandler(
+		DataServicePutProcedure,
 		svc.Put,
-		connect.WithSchema(dataPutMethodDescriptor),
+		connect.WithSchema(dataServicePutMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataGetHandler := connect.NewUnaryHandler(
-		DataGetProcedure,
+	dataServiceGetHandler := connect.NewUnaryHandler(
+		DataServiceGetProcedure,
 		svc.Get,
-		connect.WithSchema(dataGetMethodDescriptor),
+		connect.WithSchema(dataServiceGetMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataDeleteHandler := connect.NewUnaryHandler(
-		DataDeleteProcedure,
+	dataServiceDeleteHandler := connect.NewUnaryHandler(
+		DataServiceDeleteProcedure,
 		svc.Delete,
-		connect.WithSchema(dataDeleteMethodDescriptor),
+		connect.WithSchema(dataServiceDeleteMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataAppendHandler := connect.NewUnaryHandler(
-		DataAppendProcedure,
+	dataServiceAppendHandler := connect.NewUnaryHandler(
+		DataServiceAppendProcedure,
 		svc.Append,
-		connect.WithSchema(dataAppendMethodDescriptor),
+		connect.WithSchema(dataServiceAppendMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataBeginListHandler := connect.NewServerStreamHandler(
-		DataBeginListProcedure,
+	dataServiceBeginListHandler := connect.NewServerStreamHandler(
+		DataServiceBeginListProcedure,
 		svc.BeginList,
-		connect.WithSchema(dataBeginListMethodDescriptor),
+		connect.WithSchema(dataServiceBeginListMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataContinueListHandler := connect.NewServerStreamHandler(
-		DataContinueListProcedure,
+	dataServiceContinueListHandler := connect.NewServerStreamHandler(
+		DataServiceContinueListProcedure,
 		svc.ContinueList,
-		connect.WithSchema(dataContinueListMethodDescriptor),
+		connect.WithSchema(dataServiceContinueListMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataSyncListHandler := connect.NewServerStreamHandler(
-		DataSyncListProcedure,
+	dataServiceSyncListHandler := connect.NewServerStreamHandler(
+		DataServiceSyncListProcedure,
 		svc.SyncList,
-		connect.WithSchema(dataSyncListMethodDescriptor),
+		connect.WithSchema(dataServiceSyncListMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataTransactionHandler := connect.NewBidiStreamHandler(
-		DataTransactionProcedure,
+	dataServiceTransactionHandler := connect.NewBidiStreamHandler(
+		DataServiceTransactionProcedure,
 		svc.Transaction,
-		connect.WithSchema(dataTransactionMethodDescriptor),
+		connect.WithSchema(dataServiceTransactionMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	dataScanRootPathsHandler := connect.NewUnaryHandler(
-		DataScanRootPathsProcedure,
+	dataServiceScanRootPathsHandler := connect.NewUnaryHandler(
+		DataServiceScanRootPathsProcedure,
 		svc.ScanRootPaths,
-		connect.WithSchema(dataScanRootPathsMethodDescriptor),
+		connect.WithSchema(dataServiceScanRootPathsMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/stately.Data/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/stately.data.DataService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case DataPutProcedure:
-			dataPutHandler.ServeHTTP(w, r)
-		case DataGetProcedure:
-			dataGetHandler.ServeHTTP(w, r)
-		case DataDeleteProcedure:
-			dataDeleteHandler.ServeHTTP(w, r)
-		case DataAppendProcedure:
-			dataAppendHandler.ServeHTTP(w, r)
-		case DataBeginListProcedure:
-			dataBeginListHandler.ServeHTTP(w, r)
-		case DataContinueListProcedure:
-			dataContinueListHandler.ServeHTTP(w, r)
-		case DataSyncListProcedure:
-			dataSyncListHandler.ServeHTTP(w, r)
-		case DataTransactionProcedure:
-			dataTransactionHandler.ServeHTTP(w, r)
-		case DataScanRootPathsProcedure:
-			dataScanRootPathsHandler.ServeHTTP(w, r)
+		case DataServicePutProcedure:
+			dataServicePutHandler.ServeHTTP(w, r)
+		case DataServiceGetProcedure:
+			dataServiceGetHandler.ServeHTTP(w, r)
+		case DataServiceDeleteProcedure:
+			dataServiceDeleteHandler.ServeHTTP(w, r)
+		case DataServiceAppendProcedure:
+			dataServiceAppendHandler.ServeHTTP(w, r)
+		case DataServiceBeginListProcedure:
+			dataServiceBeginListHandler.ServeHTTP(w, r)
+		case DataServiceContinueListProcedure:
+			dataServiceContinueListHandler.ServeHTTP(w, r)
+		case DataServiceSyncListProcedure:
+			dataServiceSyncListHandler.ServeHTTP(w, r)
+		case DataServiceTransactionProcedure:
+			dataServiceTransactionHandler.ServeHTTP(w, r)
+		case DataServiceScanRootPathsProcedure:
+			dataServiceScanRootPathsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedDataHandler returns CodeUnimplemented from all methods.
-type UnimplementedDataHandler struct{}
+// UnimplementedDataServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedDataServiceHandler struct{}
 
-func (UnimplementedDataHandler) Put(context.Context, *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.Put is not implemented"))
+func (UnimplementedDataServiceHandler) Put(context.Context, *connect.Request[data.PutRequest]) (*connect.Response[data.PutResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.Put is not implemented"))
 }
 
-func (UnimplementedDataHandler) Get(context.Context, *connect.Request[data.GetRequest]) (*connect.Response[data.GetResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.Get is not implemented"))
+func (UnimplementedDataServiceHandler) Get(context.Context, *connect.Request[data.GetRequest]) (*connect.Response[data.GetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.Get is not implemented"))
 }
 
-func (UnimplementedDataHandler) Delete(context.Context, *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.Delete is not implemented"))
+func (UnimplementedDataServiceHandler) Delete(context.Context, *connect.Request[data.DeleteRequest]) (*connect.Response[data.DeleteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.Delete is not implemented"))
 }
 
-func (UnimplementedDataHandler) Append(context.Context, *connect.Request[data.AppendRequest]) (*connect.Response[data.AppendResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.Append is not implemented"))
+func (UnimplementedDataServiceHandler) Append(context.Context, *connect.Request[data.AppendRequest]) (*connect.Response[data.AppendResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.Append is not implemented"))
 }
 
-func (UnimplementedDataHandler) BeginList(context.Context, *connect.Request[data.BeginListRequest], *connect.ServerStream[data.ListResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.BeginList is not implemented"))
+func (UnimplementedDataServiceHandler) BeginList(context.Context, *connect.Request[data.BeginListRequest], *connect.ServerStream[data.ListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.BeginList is not implemented"))
 }
 
-func (UnimplementedDataHandler) ContinueList(context.Context, *connect.Request[data.ContinueListRequest], *connect.ServerStream[data.ListResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.ContinueList is not implemented"))
+func (UnimplementedDataServiceHandler) ContinueList(context.Context, *connect.Request[data.ContinueListRequest], *connect.ServerStream[data.ListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.ContinueList is not implemented"))
 }
 
-func (UnimplementedDataHandler) SyncList(context.Context, *connect.Request[data.SyncListRequest], *connect.ServerStream[data.SyncListResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.SyncList is not implemented"))
+func (UnimplementedDataServiceHandler) SyncList(context.Context, *connect.Request[data.SyncListRequest], *connect.ServerStream[data.SyncListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.SyncList is not implemented"))
 }
 
-func (UnimplementedDataHandler) Transaction(context.Context, *connect.BidiStream[data.TransactionRequest, data.TransactionResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.Transaction is not implemented"))
+func (UnimplementedDataServiceHandler) Transaction(context.Context, *connect.BidiStream[data.TransactionRequest, data.TransactionResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.Transaction is not implemented"))
 }
 
-func (UnimplementedDataHandler) ScanRootPaths(context.Context, *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.Data.ScanRootPaths is not implemented"))
+func (UnimplementedDataServiceHandler) ScanRootPaths(context.Context, *connect.Request[data.ScanRootPathsRequest]) (*connect.Response[data.ScanRootPathsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.data.DataService.ScanRootPaths is not implemented"))
 }

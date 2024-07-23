@@ -9,8 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/StatelyCloud/go-sdk/internal/auth"
 	"golang.org/x/net/http2"
+
+	"github.com/StatelyCloud/go-sdk/internal/auth"
 )
 
 const (
@@ -42,23 +43,20 @@ type Options struct {
 // so that it can authenticate outgoing requests.
 // This is a thread-safe interface.
 type AuthTokenProvider interface {
-	// GetAccessToken returns an access token or an error.
-	// If there is no current access token then the provider will attempt to refresh
-	// and get a new access token.
-	// An error is returned if there is no access token and the refresh operation fails
+	// GetAccessToken returns an access token or an error. If there is no current
+	// access token then the provider will block and attempt to refresh and get a
+	// new access token. An error is returned if there is no access token and the
+	// refresh operation fails.
 	GetAccessToken(ctx context.Context) (string, error)
-	// RefreshAccessToken refreshes the current access token.
-	// If there is already an existing access token that token will be returned unless
-	// force=true is passed.
-	// If the refresh network operation fails then an error will be returned
-	// On successful refresh the internal state of the provider will be updated with the new token
-	// and successive calls to GetAccessToken() will return the new token.
-	RefreshAccessToken(ctx context.Context, force bool) (string, error)
+	// InvalidateAccessToken marks the current token, if any, as invalid. This
+	// should be called if the service responds with a status that indicates the
+	// token is no longer valid. This should cause the next call to GetAccessToken
+	// to fetch a fresh token.
+	InvalidateAccessToken()
 }
 
 // ApplyDefaults applies the default values to the options.
 func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
-	var err error
 	if o == nil {
 		o = &Options{}
 	}
@@ -81,10 +79,7 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 		if clientSecret == "" {
 			return nil, fmt.Errorf("unable to read client secret from %s env var", clientSecretEnvVar)
 		}
-		o.AuthTokenProvider, err = auth.NewAuthTokenProvider(appCtx, clientID, clientSecret, nil)
-		if err != nil {
-			return nil, err
-		}
+		o.AuthTokenProvider = auth.NewAuthTokenProvider(appCtx, clientID, clientSecret, nil)
 	}
 	return o, nil
 }
@@ -125,9 +120,14 @@ func (o *Options) HTTPClient() *http.Client {
 		}
 	}
 
+	// Install auth middleware at the HTTP client layer if an auth token provider is set.
+	var roundTripper http.RoundTripper = http2Transport
+	if o.AuthTokenProvider != nil {
+		roundTripper = wrapTransportWithAuthTokenMiddleware(o.AuthTokenProvider, http2Transport)
+	}
+
 	httpClient := &http.Client{
-		// Install auth middleware at the HTTP client layer
-		Transport: wrapTransportWithAuthTokenMiddleware(o.AuthTokenProvider, http2Transport),
+		Transport: roundTripper,
 	}
 
 	return httpClient
@@ -161,7 +161,8 @@ func (m *httpAuthMiddleware) RoundTrip(req *http.Request) (*http.Response, error
 
 	// If the RPC failed due to auth, attempt to refresh the access token and retry once.
 	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
-		token, err = m.tokenProvider.RefreshAccessToken(req.Context(), true)
+		m.tokenProvider.InvalidateAccessToken()
+		token, err = m.tokenProvider.GetAccessToken(req.Context())
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // Get retrieves an item from the store.
@@ -22,15 +22,15 @@ func (t *transaction) Get(item string) (*RawItem, error) {
 
 // GetBatch retrieves items from the store.
 func (t *transaction) GetBatch(items ...string) ([]*RawItem, error) {
-	req := t.newTXNReq(&pb.TransactionRequest_GetItems{
-		GetItems: &pb.TransactionGet{Gets: mapToItemKey(items)},
+	req := t.newTXNReq(&pbdata.TransactionRequest_GetItems{
+		GetItems: &pbdata.TransactionGet{Gets: mapToItemKey(items)},
 	})
-	err := t.stream.Send(req)
+	err := t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := receiveExpected(t, req.GetMessageId(), (*pb.TransactionResponse).GetGetResults)
+	res, err := receiveExpected(t, req.GetMessageId(), (*pbdata.TransactionResponse).GetGetResults)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func (t *transaction) PutBatch(items ...*PutData) error {
 		return err
 	}
 
-	err = t.stream.Send(t.newTXNReq(&pb.TransactionRequest_PutItems{
-		PutItems: &pb.TransactionPut{Puts: putItems},
+	err = t.safeSend(t.newTXNReq(&pbdata.TransactionRequest_PutItems{
+		PutItems: &pbdata.TransactionPut{Puts: putItems},
 	}))
 	if err != nil {
 		return err
@@ -95,18 +95,18 @@ func (t *transaction) AppendBatch(prefix string, items ...*AppendRequest) ([]str
 		return nil, err
 	}
 
-	req := t.newTXNReq(&pb.TransactionRequest_AppendItems{
-		AppendItems: &pb.TransactionAppend{
+	req := t.newTXNReq(&pbdata.TransactionRequest_AppendItems{
+		AppendItems: &pbdata.TransactionAppend{
 			ParentPath: prefix,
 			Appends:    requests,
 		},
 	})
-	err = t.stream.Send(req)
+	err = t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := receiveExpected(t, req.GetMessageId(), (*pb.TransactionResponse).GetAppendAck)
+	res, err := receiveExpected(t, req.GetMessageId(), (*pbdata.TransactionResponse).GetAppendAck)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func (t *transaction) AppendBatch(prefix string, items ...*AppendRequest) ([]str
 
 // Delete schedules items to be deleted on commit.
 func (t *transaction) Delete(items ...string) error {
-	err := t.stream.Send(t.newTXNReq(&pb.TransactionRequest_DeleteItems{
-		DeleteItems: &pb.TransactionDelete{Deletes: mapDeleteRequest(items)},
+	err := t.safeSend(t.newTXNReq(&pbdata.TransactionRequest_DeleteItems{
+		DeleteItems: &pbdata.TransactionDelete{Deletes: mapDeleteRequest(items)},
 	}))
 	if err != nil {
 		return err
@@ -129,21 +129,21 @@ func (t *transaction) Delete(items ...string) error {
 }
 
 // BeginList is like a query only we call it 'List'.
-func (t *transaction) BeginList(prefix string, options ...*ListOptions) (ListResponse[*RawItem], error) {
+func (t *transaction) BeginList(prefix string, options ...ListOptions) (ListResponse[*RawItem], error) {
 	opts := ListOptions{}
 	for _, opt := range options {
-		opts.Merge(opt)
+		opts.Merge(&opt)
 	}
 
-	req := t.newTXNReq(&pb.TransactionRequest_BeginList{
-		BeginList: &pb.TransactionBeginList{
+	req := t.newTXNReq(&pbdata.TransactionRequest_BeginList{
+		BeginList: &pbdata.TransactionBeginList{
 			KeyPathPrefix: prefix,
 			Limit:         opts.Limit,
-			SortProperty:  pb.SortableProperty(opts.SortableProperty),
-			SortDirection: pb.SortDirection(opts.SortDirection),
+			SortProperty:  pbdata.SortableProperty(opts.SortableProperty),
+			SortDirection: pbdata.SortDirection(opts.SortDirection),
 		},
 	})
-	err := t.stream.Send(req)
+	err := t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +157,12 @@ func (t *transaction) ContinueList(token *ListToken) (ListResponse[*RawItem], er
 	if token == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("token is nil"))
 	}
-	req := t.newTXNReq(&pb.TransactionRequest_ContinueList{
-		ContinueList: &pb.TransactionContinueList{
+	req := t.newTXNReq(&pbdata.TransactionRequest_ContinueList{
+		ContinueList: &pbdata.TransactionContinueList{
 			TokenData: token.Data,
 		},
 	})
-	err := t.stream.Send(req)
+	err := t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +173,8 @@ func (t *transaction) ContinueList(token *ListToken) (ListResponse[*RawItem], er
 }
 
 // newTXNReq converts a transaction command to a transaction request.
-func (t *transaction) newTXNReq(command pb.IsTransactionCommand) *pb.TransactionRequest {
-	return &pb.TransactionRequest{
+func (t *transaction) newTXNReq(command pbdata.IsTransactionCommand) *pbdata.TransactionRequest {
+	return &pbdata.TransactionRequest{
 		MessageId: t.id.Add(1), // increment the message ID
 		Command:   command,
 	}
@@ -185,8 +185,8 @@ func (t *transaction) newListStream(msgID uint32) *stream {
 
 	// pull a message off the txn stream, parse and set it to resp or err
 	newStream.receive = func() bool {
-		var res *pb.TransactionListResponse
-		res, newStream.err = receiveExpected(t, msgID, (*pb.TransactionResponse).GetListResults)
+		var res *pbdata.TransactionListResponse
+		res, newStream.err = receiveExpected(t, msgID, (*pbdata.TransactionResponse).GetListResults)
 		newStream.response = res.GetListResponse()
 		return !t.done.Load()
 	}

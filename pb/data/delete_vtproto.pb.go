@@ -6,7 +6,6 @@ package data
 
 import (
 	fmt "fmt"
-	common "github.com/StatelyCloud/go-sdk/pb/common"
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -26,7 +25,6 @@ func (m *DeleteRequest) CloneVT() *DeleteRequest {
 	}
 	r := new(DeleteRequest)
 	r.StoreId = m.StoreId
-	r.Atomic = m.Atomic
 	if rhs := m.Deletes; rhs != nil {
 		tmpContainer := make([]*DeleteItem, len(rhs))
 		for k, v := range rhs {
@@ -68,7 +66,6 @@ func (m *DeleteResult) CloneVT() *DeleteResult {
 	}
 	r := new(DeleteResult)
 	r.KeyPath = m.KeyPath
-	r.Error = m.Error.CloneVT()
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -129,9 +126,6 @@ func (this *DeleteRequest) EqualVT(that *DeleteRequest) bool {
 			}
 		}
 	}
-	if this.Atomic != that.Atomic {
-		return false
-	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -168,9 +162,6 @@ func (this *DeleteResult) EqualVT(that *DeleteResult) bool {
 		return false
 	}
 	if this.KeyPath != that.KeyPath {
-		return false
-	}
-	if !this.Error.EqualVT(that.Error) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -245,16 +236,6 @@ func (m *DeleteRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.Atomic {
-		i--
-		if m.Atomic {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
 	}
 	if len(m.Deletes) > 0 {
 		for iNdEx := len(m.Deletes) - 1; iNdEx >= 0; iNdEx-- {
@@ -346,16 +327,6 @@ func (m *DeleteResult) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.Error != nil {
-		size, err := m.Error.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x12
-	}
 	if len(m.KeyPath) > 0 {
 		i -= len(m.KeyPath)
 		copy(dAtA[i:], m.KeyPath)
@@ -426,9 +397,6 @@ func (m *DeleteRequest) SizeVT() (n int) {
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
 	}
-	if m.Atomic {
-		n += 2
-	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -455,10 +423,6 @@ func (m *DeleteResult) SizeVT() (n int) {
 	_ = l
 	l = len(m.KeyPath)
 	if l > 0 {
-		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	}
-	if m.Error != nil {
-		l = m.Error.SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
@@ -563,26 +527,6 @@ func (m *DeleteRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Atomic", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Atomic = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -748,42 +692,6 @@ func (m *DeleteResult) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.KeyPath = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Error == nil {
-				m.Error = &common.OperationError{}
-			}
-			if err := m.Error.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

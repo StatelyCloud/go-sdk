@@ -7,7 +7,7 @@ package data
 //		 value := listResponse.Value()
 //		 // do something with item
 //	 }
-//	 err, token := listResponse.Token();
+//	 token, err := listResponse.Token();
 //	 // handle error and token
 type ListResponse[T any] interface {
 	// Next reads an item of the stream, and populates Value() with the current item.

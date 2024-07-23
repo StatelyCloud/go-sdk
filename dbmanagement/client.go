@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/StatelyCloud/go-sdk/client"
-	pb "github.com/StatelyCloud/go-sdk/pb/dbmanagement"
-	"github.com/StatelyCloud/go-sdk/pb/dbmanagement/dbmanagementconnect"
 	"github.com/planetscale/vtprotobuf/codec/grpc"
+
+	"github.com/StatelyCloud/go-sdk/client"
+	pbdbmanagement "github.com/StatelyCloud/go-sdk/pb/dbmanagement"
+	"github.com/StatelyCloud/go-sdk/pb/dbmanagement/dbmanagementconnect"
 )
 
 type clientImpl struct {
-	client dbmanagementconnect.ManagementClient
+	client dbmanagementconnect.ManagementServiceClient
 }
 
 // Client is a Stately management client that performs DB management operations.
@@ -33,17 +34,17 @@ func NewClient(appCtx context.Context, options ...*client.Options) (Client, erro
 		return nil, err
 	}
 	return &clientImpl{
-		client: dbmanagementconnect.NewManagementClient(
+		client: dbmanagementconnect.NewManagementServiceClient(
 			opts.HTTPClient(),
 			opts.Endpoint,
-			connect.WithCodec(grpc.Codec{}),
+			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 		),
 	}, nil
 }
 
 func (c *clientImpl) DeleteStore(ctx context.Context, storeID client.StoreID) error {
 	// DeleteStoreResponse is empty, so there is nothing to do with the response
-	_, err := c.client.DeleteStore(ctx, connect.NewRequest(&pb.DeleteStoreRequest{
+	_, err := c.client.DeleteStore(ctx, connect.NewRequest(&pbdbmanagement.DeleteStoreRequest{
 		StoreId: uint64(storeID),
 	}))
 	if err != nil {
@@ -57,7 +58,7 @@ func (c *clientImpl) CreateStore(
 	projectID client.ProjectID,
 	name, description string,
 ) (*StoreInfo, error) {
-	response, err := c.client.CreateStore(ctx, connect.NewRequest(&pb.CreateStoreRequest{
+	response, err := c.client.CreateStore(ctx, connect.NewRequest(&pbdbmanagement.CreateStoreRequest{
 		ProjectId:   uint64(projectID),
 		Name:        name,
 		Description: description,

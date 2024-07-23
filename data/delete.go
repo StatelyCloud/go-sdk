@@ -5,23 +5,12 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/StatelyCloud/go-sdk/internal"
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // DeleteRequest one or more items to from the Group.
 type DeleteRequest struct {
 	ItemPaths []string
-	// (option) Atomic indicates that all deletes must succeed or none will (i.e. that they
-	// are applied in a transaction), and that other operations will be serialized
-	// ahead or behind this operation.
-	Atomic IsAtomic
-}
-
-// DeleteResponse indicates if a specific KeyPath failed to delete along with an error indicating why.
-type DeleteResponse struct {
-	KeyPath string
-	Error   error
 }
 
 // NewDeleteRequest is a convenience method to construct DeleteRequest with single or more items vs vanilla golang:
@@ -35,13 +24,9 @@ func NewDeleteRequest(itemPaths ...string) DeleteRequest {
 // Delete is a convenience method for removing a single Item from the Store by its full key path.
 // See DeleteBatch for more information.
 func (c *dataClient) Delete(ctx context.Context, itemPath string) error {
-	deletes, err := c.DeleteBatch(ctx, DeleteRequest{
+	return c.DeleteBatch(ctx, DeleteRequest{
 		ItemPaths: []string{itemPath},
 	})
-	if err != nil {
-		return err
-	}
-	return deletes[0].Error
 }
 
 // DeleteBatch removes one or more Items from the Store by their full key paths. This
@@ -50,34 +35,26 @@ func (c *dataClient) Delete(ctx context.Context, itemPath string) error {
 // to delete Items. Tombstones will be left for deleted items for some
 // predetermined time (TBD tombstone behavior). All deletes in the request are
 // applied atomically - there are no partial successes.
-func (c *dataClient) DeleteBatch(ctx context.Context, request DeleteRequest) ([]*DeleteResponse, error) {
-	resp, err := c.client.Delete(ctx, connect.NewRequest(&pb.DeleteRequest{
+func (c *dataClient) DeleteBatch(ctx context.Context, request DeleteRequest) error {
+	_, err := c.client.Delete(ctx, connect.NewRequest(&pbdata.DeleteRequest{
 		StoreId: uint64(c.storeID),
 		Deletes: mapDeleteRequest(request.ItemPaths),
-		Atomic:  bool(request.Atomic),
 	}))
-	if err != nil {
-		return nil, err
-	}
-
-	return mapDeleteResponse(resp.Msg.GetResults()), nil
+	return err
 }
 
-func mapDeleteResponse(results []*pb.DeleteResult) []*DeleteResponse {
-	deleteResponses := make([]*DeleteResponse, len(results))
+func mapDeleteResponse(results []*pbdata.DeleteResult) []string {
+	deleteResponses := make([]string, len(results))
 	for idx, result := range results {
-		deleteResponses[idx] = &DeleteResponse{
-			KeyPath: result.GetKeyPath(),
-			Error:   internal.MapProtoError(result.GetError()),
-		}
+		deleteResponses[idx] = result.KeyPath
 	}
 	return deleteResponses
 }
 
-func mapDeleteRequest(keyPaths []string) []*pb.DeleteItem {
-	deleteItems := make([]*pb.DeleteItem, len(keyPaths))
+func mapDeleteRequest(keyPaths []string) []*pbdata.DeleteItem {
+	deleteItems := make([]*pbdata.DeleteItem, len(keyPaths))
 	for i, v := range keyPaths {
-		deleteItems[i] = &pb.DeleteItem{KeyPath: v}
+		deleteItems[i] = &pbdata.DeleteItem{KeyPath: v}
 	}
 	return deleteItems
 }

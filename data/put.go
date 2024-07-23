@@ -6,8 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/StatelyCloud/go-sdk/internal"
-	pb "github.com/StatelyCloud/go-sdk/pb/data"
+	pbdata "github.com/StatelyCloud/go-sdk/pb/data"
 )
 
 // PutData allows you to fill in any type of data at a desired KeyPath.
@@ -30,42 +29,14 @@ type PutData struct {
 // marshalled/unmarshalled as JSON, or a struct that can be
 // serialized/deserialized as a proto.
 func (c *dataClient) Put(ctx context.Context, path string, value any) (*RawItem, error) {
-	responses, err := c.PutBatch(ctx, PutBatchRequest{
-		PutData: []*PutData{
-			{
-				KeyPath: path,
-				Data:    value,
-			},
-		},
+	responses, err := c.PutBatch(ctx, &PutData{
+		KeyPath: path,
+		Data:    value,
 	})
 	if err != nil {
 		return nil, err
 	}
-	response := responses[0]
-	return response.RawItem, response.Error
-}
-
-// PutBatchRequest allows you to specify items to put either atomically or non-atomic. Atomic operations are more expensive
-// in terms of io/latency/cost.
-type PutBatchRequest struct {
-	PutData []*PutData
-	// (option) Atomic indicates that all puts must succeed or none will (i.e. that they
-	// are applied in a transaction), and that other operations will be serialized
-	// ahead or behind this operation.
-	Atomic IsAtomic
-}
-
-// NewPutBatchRequest is a convenience method to generate a new PutBatchRequest.
-func NewPutBatchRequest[T any](putRequests ...*PutData) PutBatchRequest {
-	return PutBatchRequest{
-		PutData: putRequests,
-	}
-}
-
-// PutBatchResponse is a simple tuple of either RawItem or Error.
-type PutBatchResponse struct {
-	*RawItem
-	Error error
+	return responses[0], nil
 }
 
 // PutBatch adds one or more Items to the Store, or replaces the Items if they
@@ -80,34 +51,31 @@ type PutBatchResponse struct {
 // All puts in the request are applied atomically - there are no partial
 // successes. Data can be provided as either JSON, or as a proto encoded by a
 // previously agreed upon schema, or by some combination of the two.
-func (c *dataClient) PutBatch(ctx context.Context, batchRequest PutBatchRequest) ([]*PutBatchResponse, error) {
-	putItems, originalItems, err := mapPutRequest(batchRequest.PutData)
+func (c *dataClient) PutBatch(ctx context.Context, batch ...*PutData) ([]*RawItem, error) {
+	putItems, originalItems, err := mapPutRequest(batch)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.client.Put(ctx, connect.NewRequest(&pb.PutRequest{
+	resp, err := c.client.Put(ctx, connect.NewRequest(&pbdata.PutRequest{
 		StoreId: uint64(c.storeID),
 		Puts:    putItems,
-		Atomic:  bool(batchRequest.Atomic),
 	}))
 	if err != nil {
 		return nil, err
 	}
 
-	responses := mapPutResponses(resp.Msg.GetResults(), originalItems)
-
-	return responses, nil
+	return mapPutResponses(resp.Msg.GetResults(), originalItems)
 }
 
 // shared between transactional and non-transactional put.
-func mapPutRequest(batchRequest []*PutData) ([]*pb.PutItem, []*parsedData[*structpb.Struct], error) {
+func mapPutRequest(batchRequest []*PutData) ([]*pbdata.PutItem, []*parsedData[*structpb.Struct], error) {
 	// Build the put items
-	putItems := make([]*pb.PutItem, len(batchRequest))
+	putItems := make([]*pbdata.PutItem, len(batchRequest))
 	originalItems := make([]*parsedData[*structpb.Struct], len(batchRequest))
 	for i, v := range batchRequest {
 
-		item := &pb.Item{
+		item := &pbdata.Item{
 			KeyPath: v.KeyPath,
 		}
 
@@ -121,7 +89,7 @@ func mapPutRequest(batchRequest []*PutData) ([]*pb.PutItem, []*parsedData[*struc
 		item.Json = jsonData.getJSONParsed()
 		item.Proto = protoData
 
-		putItems[i] = &pb.PutItem{
+		putItems[i] = &pbdata.PutItem{
 			Item: item,
 		}
 	}
@@ -129,20 +97,13 @@ func mapPutRequest(batchRequest []*PutData) ([]*pb.PutItem, []*parsedData[*struc
 }
 
 // shared between transactional and non-transactional put.
-func mapPutResponses(results []*pb.PutResult, originalItems []*parsedData[*structpb.Struct]) []*PutBatchResponse {
+func mapPutResponses(results []*pbdata.PutResult, originalItems []*parsedData[*structpb.Struct]) ([]*RawItem, error) {
 	if results == nil {
-		return nil
+		return nil, nil
 	}
 	// map the results back
-	responses := make([]*PutBatchResponse, len(results))
+	responses := make([]*RawItem, len(results))
 	for idx, result := range results {
-
-		// Handle err first
-		if err := result.GetError(); err != nil {
-			responses[idx] = &PutBatchResponse{Error: internal.MapProtoError(err)}
-			continue
-		}
-
 		item := &RawItem{
 			JSONData: originalItems[idx].getJSONData(),
 		}
@@ -150,11 +111,9 @@ func mapPutResponses(results []*pb.PutResult, originalItems []*parsedData[*struc
 		item = setProtoMetadata(result.GetMetadata(), item)
 		item, err := setKeyPath(result.GetKeyPath(), item)
 		if err != nil {
-			responses[idx] = &PutBatchResponse{Error: err}
-			continue
+			return nil, err
 		}
-
-		responses[idx] = &PutBatchResponse{RawItem: item}
+		responses[idx] = item
 	}
-	return responses
+	return responses, nil
 }
