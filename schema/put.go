@@ -23,10 +23,11 @@ func (c *schemaClient) Put(
 	}
 
 	resp, err := c.client.Put(ctx, connect.NewRequest(&schemaservice.PutRequest{
-		StoreId:           uint64(c.storeID),
-		FileDescriptor:    fileDescriptor,
-		ChangeDescription: changeDescription,
-		DryRun:            opts.DryRun,
+		StoreId:                    uint64(c.storeID),
+		FileDescriptor:             fileDescriptor,
+		ChangeDescription:          changeDescription,
+		DryRun:                     opts.DryRun,
+		AllowBackwardsIncompatible: opts.Force,
 	}))
 	if err != nil {
 		return false, nil, err
@@ -38,4 +39,6 @@ func (c *schemaClient) Put(
 type PutOptions struct {
 	// If DryRun is true the request will be validated against the existing schema but not applied.
 	DryRun bool
+	// If force is true, the schema will be applied even if it is backwards incompatible.
+	Force bool
 }

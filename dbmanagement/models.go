@@ -1,10 +1,12 @@
 package dbmanagement
 
-import "github.com/StatelyCloud/go-sdk/client"
+import (
+	"github.com/StatelyCloud/go-sdk/stately"
+)
 
 // StoreInfo is information about the store.
 type StoreInfo struct {
-	ID          client.StoreID
+	ID          stately.StoreID
 	Name        string
 	Description string
 }

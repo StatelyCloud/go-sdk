@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/StatelyCloud/go-sdk/client"
 	"github.com/StatelyCloud/go-sdk/dbmanagement"
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 // Organization is info about the org and the projects which it contains.
@@ -13,7 +13,7 @@ type Organization struct {
 
 // OrganizationInfo is info about the org.
 type OrganizationInfo struct {
-	ID   client.OrganizationID
+	ID   stately.OrganizationID
 	Name string
 }
 
@@ -25,7 +25,7 @@ type Project struct {
 
 // ProjectInfo is info about the project.
 type ProjectInfo struct {
-	ID          client.ProjectID
+	ID          stately.ProjectID
 	Name        string
 	Description string
 }
@@ -35,7 +35,7 @@ type ProjectInfo struct {
 //nolint:revive // This corresponds to an API type, ignore "stutter"
 type UserInfo struct {
 	OAuthSubject string
-	UserID       client.UserID
+	UserID       stately.UserID
 }
 
 // WhoamiResponse is information about the user as well as the organizations which they are a member.

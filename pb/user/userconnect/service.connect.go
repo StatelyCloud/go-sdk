@@ -40,6 +40,8 @@ const (
 	UserServiceGetCallerIdentityProcedure = "/stately.user.UserService/GetCallerIdentity"
 	// UserServiceEnrollProcedure is the fully-qualified name of the UserService's Enroll RPC.
 	UserServiceEnrollProcedure = "/stately.user.UserService/Enroll"
+	// UserServiceDeleteUserProcedure is the fully-qualified name of the UserService's DeleteUser RPC.
+	UserServiceDeleteUserProcedure = "/stately.user.UserService/DeleteUser"
 	// UserServiceEnrollMachineUserProcedure is the fully-qualified name of the UserService's
 	// EnrollMachineUser RPC.
 	UserServiceEnrollMachineUserProcedure = "/stately.user.UserService/EnrollMachineUser"
@@ -72,6 +74,7 @@ var (
 	userServiceWhoamiMethodDescriptor                      = userServiceServiceDescriptor.Methods().ByName("Whoami")
 	userServiceGetCallerIdentityMethodDescriptor           = userServiceServiceDescriptor.Methods().ByName("GetCallerIdentity")
 	userServiceEnrollMethodDescriptor                      = userServiceServiceDescriptor.Methods().ByName("Enroll")
+	userServiceDeleteUserMethodDescriptor                  = userServiceServiceDescriptor.Methods().ByName("DeleteUser")
 	userServiceEnrollMachineUserMethodDescriptor           = userServiceServiceDescriptor.Methods().ByName("EnrollMachineUser")
 	userServiceCreateProjectMethodDescriptor               = userServiceServiceDescriptor.Methods().ByName("CreateProject")
 	userServiceDeleteProjectMethodDescriptor               = userServiceServiceDescriptor.Methods().ByName("DeleteProject")
@@ -102,6 +105,11 @@ type UserServiceClient interface {
 	// organization, project, and store for them to use. User information is
 	// automatically read from the auth token.
 	Enroll(context.Context, *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error)
+	// DeleteUser deletes a user from Stately's system. This also removes them
+	// from all organizations. This will fail if the user does not exist, or if
+	// you do not have permission to delete users. It is safe to retry this
+	// operation.
+	DeleteUser(context.Context, *connect.Request[user.DeleteUserRequest]) (*connect.Response[user.DeleteUserResponse], error)
 	// EnrollMachineUser bootstraps a new machine user principal ID from an auth
 	// provider and enrolls them in the organization ID which was passed in the
 	// request. Once a machine user has been enrolled in one organization, it
@@ -174,6 +182,13 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
+		deleteUser: connect.NewClient[user.DeleteUserRequest, user.DeleteUserResponse](
+			httpClient,
+			baseURL+UserServiceDeleteUserProcedure,
+			connect.WithSchema(userServiceDeleteUserMethodDescriptor),
+			connect.WithIdempotency(connect.IdempotencyIdempotent),
+			connect.WithClientOptions(opts...),
+		),
 		enrollMachineUser: connect.NewClient[user.EnrollMachineUserRequest, user.EnrollMachineUserResponse](
 			httpClient,
 			baseURL+UserServiceEnrollMachineUserProcedure,
@@ -236,6 +251,7 @@ type userServiceClient struct {
 	whoami                      *connect.Client[user.WhoamiRequest, user.WhoamiResponse]
 	getCallerIdentity           *connect.Client[user.GetCallerIdentityRequest, user.GetCallerIdentityResponse]
 	enroll                      *connect.Client[user.EnrollRequest, user.EnrollResponse]
+	deleteUser                  *connect.Client[user.DeleteUserRequest, user.DeleteUserResponse]
 	enrollMachineUser           *connect.Client[user.EnrollMachineUserRequest, user.EnrollMachineUserResponse]
 	createProject               *connect.Client[user.CreateProjectRequest, user.CreateProjectResponse]
 	deleteProject               *connect.Client[user.DeleteProjectRequest, user.DeleteProjectResponse]
@@ -259,6 +275,11 @@ func (c *userServiceClient) GetCallerIdentity(ctx context.Context, req *connect.
 // Enroll calls stately.user.UserService.Enroll.
 func (c *userServiceClient) Enroll(ctx context.Context, req *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
 	return c.enroll.CallUnary(ctx, req)
+}
+
+// DeleteUser calls stately.user.UserService.DeleteUser.
+func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request[user.DeleteUserRequest]) (*connect.Response[user.DeleteUserResponse], error) {
+	return c.deleteUser.CallUnary(ctx, req)
 }
 
 // EnrollMachineUser calls stately.user.UserService.EnrollMachineUser.
@@ -321,6 +342,11 @@ type UserServiceHandler interface {
 	// organization, project, and store for them to use. User information is
 	// automatically read from the auth token.
 	Enroll(context.Context, *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error)
+	// DeleteUser deletes a user from Stately's system. This also removes them
+	// from all organizations. This will fail if the user does not exist, or if
+	// you do not have permission to delete users. It is safe to retry this
+	// operation.
+	DeleteUser(context.Context, *connect.Request[user.DeleteUserRequest]) (*connect.Response[user.DeleteUserResponse], error)
 	// EnrollMachineUser bootstraps a new machine user principal ID from an auth
 	// provider and enrolls them in the organization ID which was passed in the
 	// request. Once a machine user has been enrolled in one organization, it
@@ -389,6 +415,13 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceDeleteUserHandler := connect.NewUnaryHandler(
+		UserServiceDeleteUserProcedure,
+		svc.DeleteUser,
+		connect.WithSchema(userServiceDeleteUserMethodDescriptor),
+		connect.WithIdempotency(connect.IdempotencyIdempotent),
+		connect.WithHandlerOptions(opts...),
+	)
 	userServiceEnrollMachineUserHandler := connect.NewUnaryHandler(
 		UserServiceEnrollMachineUserProcedure,
 		svc.EnrollMachineUser,
@@ -451,6 +484,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceGetCallerIdentityHandler.ServeHTTP(w, r)
 		case UserServiceEnrollProcedure:
 			userServiceEnrollHandler.ServeHTTP(w, r)
+		case UserServiceDeleteUserProcedure:
+			userServiceDeleteUserHandler.ServeHTTP(w, r)
 		case UserServiceEnrollMachineUserProcedure:
 			userServiceEnrollMachineUserHandler.ServeHTTP(w, r)
 		case UserServiceCreateProjectProcedure:
@@ -486,6 +521,10 @@ func (UnimplementedUserServiceHandler) GetCallerIdentity(context.Context, *conne
 
 func (UnimplementedUserServiceHandler) Enroll(context.Context, *connect.Request[user.EnrollRequest]) (*connect.Response[user.EnrollResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.Enroll is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Request[user.DeleteUserRequest]) (*connect.Response[user.DeleteUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.user.UserService.DeleteUser is not implemented"))
 }
 
 func (UnimplementedUserServiceHandler) EnrollMachineUser(context.Context, *connect.Request[user.EnrollMachineUserRequest]) (*connect.Response[user.EnrollMachineUserResponse], error) {

@@ -6,9 +6,10 @@ import (
 	"connectrpc.com/connect"
 	"github.com/planetscale/vtprotobuf/codec/grpc"
 
-	"github.com/StatelyCloud/go-sdk/client"
 	pbdbmanagement "github.com/StatelyCloud/go-sdk/pb/dbmanagement"
 	"github.com/StatelyCloud/go-sdk/pb/dbmanagement/dbmanagementconnect"
+	"github.com/StatelyCloud/go-sdk/sdkerror"
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 type clientImpl struct {
@@ -18,14 +19,14 @@ type clientImpl struct {
 // Client is a Stately management client that performs DB management operations.
 type Client interface {
 	// DeleteStore maps to Management API.
-	DeleteStore(ctx context.Context, storeID client.StoreID) error
+	DeleteStore(ctx context.Context, storeID stately.StoreID) error
 	// CreateStore maps to Management API.
-	CreateStore(ctx context.Context, projectID client.ProjectID, name, description string) (*StoreInfo, error)
+	CreateStore(ctx context.Context, projectID stately.ProjectID, name, description string) (*StoreInfo, error)
 }
 
 // NewClient creates a new client with the given store and options.
-func NewClient(appCtx context.Context, options ...*client.Options) (Client, error) {
-	opts := &client.Options{}
+func NewClient(appCtx context.Context, options ...*stately.Options) (Client, error) {
+	opts := &stately.Options{}
 	for _, o := range options {
 		opts = opts.Merge(o)
 	}
@@ -38,11 +39,12 @@ func NewClient(appCtx context.Context, options ...*client.Options) (Client, erro
 			opts.HTTPClient(),
 			opts.Endpoint,
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
+			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
 		),
 	}, nil
 }
 
-func (c *clientImpl) DeleteStore(ctx context.Context, storeID client.StoreID) error {
+func (c *clientImpl) DeleteStore(ctx context.Context, storeID stately.StoreID) error {
 	// DeleteStoreResponse is empty, so there is nothing to do with the response
 	_, err := c.client.DeleteStore(ctx, connect.NewRequest(&pbdbmanagement.DeleteStoreRequest{
 		StoreId: uint64(storeID),
@@ -55,7 +57,7 @@ func (c *clientImpl) DeleteStore(ctx context.Context, storeID client.StoreID) er
 
 func (c *clientImpl) CreateStore(
 	ctx context.Context,
-	projectID client.ProjectID,
+	projectID stately.ProjectID,
 	name, description string,
 ) (*StoreInfo, error) {
 	response, err := c.client.CreateStore(ctx, connect.NewRequest(&pbdbmanagement.CreateStoreRequest{
@@ -67,7 +69,7 @@ func (c *clientImpl) CreateStore(
 		return nil, err
 	}
 	return &StoreInfo{
-		ID:          client.StoreID(response.Msg.StoreId),
+		ID:          stately.StoreID(response.Msg.StoreId),
 		Name:        name,
 		Description: description,
 	}, nil

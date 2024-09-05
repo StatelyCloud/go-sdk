@@ -6,10 +6,11 @@ import (
 	"connectrpc.com/connect"
 	"github.com/planetscale/vtprotobuf/codec/grpc"
 
-	"github.com/StatelyCloud/go-sdk/client"
 	"github.com/StatelyCloud/go-sdk/dbmanagement"
 	pbuser "github.com/StatelyCloud/go-sdk/pb/user"
 	"github.com/StatelyCloud/go-sdk/pb/user/userconnect"
+	"github.com/StatelyCloud/go-sdk/sdkerror"
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 type clientImpl struct {
@@ -35,7 +36,7 @@ type Client interface {
 		ctx context.Context,
 		oAuthSubject string,
 		displayName string,
-		organizationID client.OrganizationID,
+		organizationID stately.OrganizationID,
 	) error
 
 	// CreateOrganization creates a new organization with the given name.
@@ -43,8 +44,8 @@ type Client interface {
 }
 
 // NewClient creates a new client with the given store and options.
-func NewClient(appCtx context.Context, options ...*client.Options) (Client, error) {
-	opts := &client.Options{}
+func NewClient(appCtx context.Context, options ...*stately.Options) (Client, error) {
+	opts := &stately.Options{}
 	for _, o := range options {
 		opts = opts.Merge(o)
 	}
@@ -54,7 +55,12 @@ func NewClient(appCtx context.Context, options ...*client.Options) (Client, erro
 	}
 
 	return &clientImpl{
-		client: userconnect.NewUserServiceClient(opts.HTTPClient(), opts.Endpoint, connect.WithCodec(grpc.Codec{})),
+		client: userconnect.NewUserServiceClient(
+			opts.HTTPClient(),
+			opts.Endpoint,
+			connect.WithCodec(grpc.Codec{}),
+			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
+		),
 	}, nil
 }
 
@@ -67,7 +73,7 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 	for i, orgNode := range response.Msg.Organizations {
 		organizations[i] = &Organization{
 			OrganizationInfo: &OrganizationInfo{
-				ID:   client.OrganizationID(orgNode.Organization.OrganizationId),
+				ID:   stately.OrganizationID(orgNode.Organization.OrganizationId),
 				Name: orgNode.Organization.Name,
 			},
 		}
@@ -75,7 +81,7 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 		for j, projNode := range orgNode.Projects {
 			projects[j] = &Project{
 				ProjectInfo: &ProjectInfo{
-					ID:          client.ProjectID(projNode.Project.ProjectId),
+					ID:          stately.ProjectID(projNode.Project.ProjectId),
 					Name:        projNode.Project.Name,
 					Description: projNode.Project.Description,
 				},
@@ -84,7 +90,7 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 
 			for k, store := range projNode.Stores {
 				projects[j].Stores[k] = &dbmanagement.StoreInfo{
-					ID:          client.StoreID(store.GetStore().GetStoreId()),
+					ID:          stately.StoreID(store.GetStore().GetStoreId()),
 					Name:        store.GetStore().GetName(),
 					Description: store.GetStore().GetDescription(),
 				}
@@ -95,7 +101,7 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 	return &WhoamiResponse{
 		UserInfo: &UserInfo{
 			OAuthSubject: response.Msg.OauthSubject,
-			UserID:       client.UserID(response.Msg.UserId),
+			UserID:       stately.UserID(response.Msg.UserId),
 		},
 		Organizations: organizations,
 	}, nil
@@ -105,7 +111,7 @@ func (c *clientImpl) EnrollMachineUser(
 	ctx context.Context,
 	oAuthSubject string,
 	displayName string,
-	organizationID client.OrganizationID,
+	organizationID stately.OrganizationID,
 ) error {
 	_, err := c.client.EnrollMachineUser(ctx, connect.NewRequest(&pbuser.EnrollMachineUserRequest{
 		OAuthSubject:   oAuthSubject,
@@ -129,7 +135,7 @@ func (c *clientImpl) CreateOrganization(
 		return nil, err
 	}
 	return &OrganizationInfo{
-		ID:   client.OrganizationID(response.Msg.GetOrganizationId()),
+		ID:   stately.OrganizationID(response.Msg.GetOrganizationId()),
 		Name: name,
 	}, nil
 }

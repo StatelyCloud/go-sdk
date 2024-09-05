@@ -23,10 +23,16 @@ func TestGetToken(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// read the body into a map of interfaces
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		reqData := map[string]string{}
 		err = json.Unmarshal(body, &reqData)
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		// check that the audience was set correctly
 		assert.Equal(t, "test-aud", reqData["audience"])
@@ -35,7 +41,10 @@ func TestGetToken(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]any{"access_token": "test-token", "expires_in": 1000})
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 
 	p := auth.NewAuthTokenProvider(
@@ -68,7 +77,10 @@ func TestConcurrentRefresh(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
 			Encode(map[string]any{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		count.Add(1)
 	}))
 
@@ -87,7 +99,7 @@ func TestConcurrentRefresh(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			token, err := p.GetAccessToken(context.TODO())
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, "0", token)
 		}()
 	}
@@ -106,7 +118,10 @@ func TestGetExpiredAuth(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
 			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 	defer svr.Close()
 
@@ -146,7 +161,10 @@ func TestBackgroundRefresh(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
 			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 	defer svr.Close()
 
@@ -186,7 +204,10 @@ func TestRefreshContextCancelled(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).
 			Encode(map[string]any{"access_token": "test-token", "expires_in": 0})
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 	defer svr.Close()
 
@@ -204,7 +225,7 @@ func TestRefreshContextCancelled(t *testing.T) {
 
 	token, err := p.GetAccessToken(ctx)
 	assert.Equal(t, "", token)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 // This test mimics a situation where auth0 is down and returning 500 errors.
@@ -215,7 +236,10 @@ func TestNetworkError(t *testing.T) {
 		time.Sleep(time.Millisecond * 100)
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err := w.Write([]byte("500 - Something bad happened!"))
-		require.NoError(t, err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 	defer svr.Close()
 
@@ -231,5 +255,5 @@ func TestNetworkError(t *testing.T) {
 
 	token, err := p.GetAccessToken(context.TODO())
 	assert.Equal(t, "", token)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

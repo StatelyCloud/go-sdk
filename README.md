@@ -22,7 +22,7 @@ To use the client from a Go application:
 
 ```go
 import (
-  "github.com/StatelyCloud/go-sdk/data"
+  "github.com/StatelyCloud/go-sdk/stately"
   "github.com/StatelyCloud/go-sdk/client"
 )
 

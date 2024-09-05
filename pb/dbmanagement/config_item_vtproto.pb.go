@@ -6,7 +6,6 @@ package dbmanagement
 
 import (
 	fmt "fmt"
-	schemamodel "github.com/StatelyCloud/stately/schema/lib/schemamodel"
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -817,7 +816,7 @@ func (m *TTLConfig) UnmarshalVT(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Source |= schemamodel.Ttl_TtlSource(b&0x7F) << shift
+				m.Source |= TtlSource(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -891,7 +890,7 @@ func (m *TTLConfig) UnmarshalVT(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InterpretAs |= schemamodel.NumberInterpretAs(b&0x7F) << shift
+				m.InterpretAs |= NumberInterpretAs(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

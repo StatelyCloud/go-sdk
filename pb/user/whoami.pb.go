@@ -77,7 +77,7 @@ type WhoamiResponse struct {
 	// TODO: In the future we'll want to replace this with a list of emails,
 	// verification status, etc.
 	Email string `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	// enrollment_time is the UTC epoch of when the User was created.
+	// enrollment_time is the time in microseconds since UTC epoch of when the User was created.
 	EnrollmentTime uint64 `protobuf:"varint,4,opt,name=enrollment_time,json=enrollmentTime,proto3" json:"enrollment_time,omitempty"`
 	// display_name is the user's display name.
 	DisplayName string `protobuf:"bytes,5,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
