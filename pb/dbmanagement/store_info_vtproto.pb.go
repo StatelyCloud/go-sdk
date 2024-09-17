@@ -27,6 +27,7 @@ func (m *StoreInfo) CloneVT() *StoreInfo {
 	r.StoreId = m.StoreId
 	r.Name = m.Name
 	r.Description = m.Description
+	r.DefaultRegion = m.DefaultRegion
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -51,6 +52,7 @@ func (m *StoreConfig) CloneVT() *StoreConfig {
 	r.Backups = m.Backups.CloneVT()
 	r.RequestRateLimiting = m.RequestRateLimiting.CloneVT()
 	r.CustomTableAccessor = m.CustomTableAccessor.CloneVT()
+	r.RegionalConfig = m.RegionalConfig.CloneVT()
 	if rhs := m.GroupConfigs; rhs != nil {
 		tmpContainer := make([]*GroupConfig, len(rhs))
 		for k, v := range rhs {
@@ -76,6 +78,46 @@ func (m *StoreConfig) CloneMessageVT() proto.Message {
 	return m.CloneVT()
 }
 
+func (m *RegionalConfiguration) CloneVT() *RegionalConfiguration {
+	if m == nil {
+		return (*RegionalConfiguration)(nil)
+	}
+	r := new(RegionalConfiguration)
+	if rhs := m.RegionConfigs; rhs != nil {
+		tmpContainer := make([]*RegionConfig, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v.CloneVT()
+		}
+		r.RegionConfigs = tmpContainer
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *RegionalConfiguration) CloneMessageVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *RegionConfig) CloneVT() *RegionConfig {
+	if m == nil {
+		return (*RegionConfig)(nil)
+	}
+	r := new(RegionConfig)
+	r.Region = m.Region
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *RegionConfig) CloneMessageVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *StoreInfo) EqualVT(that *StoreInfo) bool {
 	if this == that {
 		return true
@@ -89,6 +131,9 @@ func (this *StoreInfo) EqualVT(that *StoreInfo) bool {
 		return false
 	}
 	if this.Description != that.Description {
+		return false
+	}
+	if this.DefaultRegion != that.DefaultRegion {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -165,11 +210,66 @@ func (this *StoreConfig) EqualVT(that *StoreConfig) bool {
 			}
 		}
 	}
+	if !this.RegionalConfig.EqualVT(that.RegionalConfig) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *StoreConfig) EqualMessageVT(thatMsg proto.Message) bool {
 	that, ok := thatMsg.(*StoreConfig)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+func (this *RegionalConfiguration) EqualVT(that *RegionalConfiguration) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if len(this.RegionConfigs) != len(that.RegionConfigs) {
+		return false
+	}
+	for i, vx := range this.RegionConfigs {
+		vy := that.RegionConfigs[i]
+		if p, q := vx, vy; p != q {
+			if p == nil {
+				p = &RegionConfig{}
+			}
+			if q == nil {
+				q = &RegionConfig{}
+			}
+			if !p.EqualVT(q) {
+				return false
+			}
+		}
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RegionalConfiguration) EqualMessageVT(thatMsg proto.Message) bool {
+	that, ok := thatMsg.(*RegionalConfiguration)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+func (this *RegionConfig) EqualVT(that *RegionConfig) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Region != that.Region {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RegionConfig) EqualMessageVT(thatMsg proto.Message) bool {
+	that, ok := thatMsg.(*RegionConfig)
 	if !ok {
 		return false
 	}
@@ -204,6 +304,11 @@ func (m *StoreInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.DefaultRegion != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.DefaultRegion))
+		i--
+		dAtA[i] = 0x20
 	}
 	if len(m.Description) > 0 {
 		i -= len(m.Description)
@@ -256,6 +361,16 @@ func (m *StoreConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.RegionalConfig != nil {
+		size, err := m.RegionalConfig.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x5a
 	}
 	if len(m.ItemConfigs) > 0 {
 		for iNdEx := len(m.ItemConfigs) - 1; iNdEx >= 0; iNdEx-- {
@@ -343,6 +458,89 @@ func (m *StoreConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *RegionalConfiguration) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegionalConfiguration) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RegionalConfiguration) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i -= len(m.unknownFields)
+		copy(dAtA[i:], m.unknownFields)
+	}
+	if len(m.RegionConfigs) > 0 {
+		for iNdEx := len(m.RegionConfigs) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.RegionConfigs[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegionConfig) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegionConfig) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RegionConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i -= len(m.unknownFields)
+		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.Region != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.Region))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *StoreInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -359,6 +557,9 @@ func (m *StoreInfo) SizeVT() (n int) {
 	l = len(m.Description)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.DefaultRegion != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.DefaultRegion))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -410,6 +611,39 @@ func (m *StoreConfig) SizeVT() (n int) {
 			l = e.SizeVT()
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
+	}
+	if m.RegionalConfig != nil {
+		l = m.RegionalConfig.SizeVT()
+		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *RegionalConfiguration) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.RegionConfigs) > 0 {
+		for _, e := range m.RegionConfigs {
+			l = e.SizeVT()
+			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+		}
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *RegionConfig) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Region != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.Region))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -527,6 +761,25 @@ func (m *StoreInfo) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Description = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultRegion", wireType)
+			}
+			m.DefaultRegion = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DefaultRegion |= Region(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -875,6 +1128,197 @@ func (m *StoreConfig) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RegionalConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RegionalConfig == nil {
+				m.RegionalConfig = &RegionalConfiguration{}
+			}
+			if err := m.RegionalConfig.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegionalConfiguration) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return protohelpers.ErrIntOverflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegionalConfiguration: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegionalConfiguration: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RegionConfigs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RegionConfigs = append(m.RegionConfigs, &RegionConfig{})
+			if err := m.RegionConfigs[len(m.RegionConfigs)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegionConfig) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return protohelpers.ErrIntOverflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegionConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegionConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			m.Region = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Region |= Region(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

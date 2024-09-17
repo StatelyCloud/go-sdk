@@ -18,7 +18,7 @@ type Error struct {
 
 	// The StatelyCode property is the specific error code
 	// For more information about a specific code read:
-	// https://preview-docs.stately.cloud/reference/error_codes/#{STATELY_CODE}
+	// https://docs.stately.cloud/reference/error_codes/#{STATELY_CODE}
 	StatelyCode StatelyErrorCode
 
 	// Message is a human-readable description of the error itself.

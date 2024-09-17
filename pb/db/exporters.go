@@ -47,3 +47,30 @@ func (t *ListResponse) GetListResponse() ListResponder {
 	}
 	return nil
 }
+
+// SyncResponder gets around the unexported interface in the generated proto
+// code and allows us to use a common interface for both "Result" and "Finished".
+type SyncResponder interface {
+	IsSyncResponder()
+}
+
+// IsSyncResponder is a type that binds ListPartialResult to the SyncResponder interface.
+// This makes handling the response easier in the SDK.
+func (*ListFinished) IsSyncResponder() {}
+
+// IsSyncResponder is a type that binds SyncListPartialResponse to the SyncResponder interface.
+// This makes handling the response easier in the SDK.
+func (*SyncListPartialResponse) IsSyncResponder() {}
+
+// GetSyncResponse marshals the response into a SyncResponder so that we can use
+// a common interface for both "Result" and "Finished".
+func (t *SyncListResponse) GetSyncResponse() SyncResponder {
+	// Note: make sure to access t.Response via the nil-safe accessor.
+	switch v := t.GetResponse().(type) {
+	case *SyncListResponse_Result:
+		return v.Result
+	case *SyncListResponse_Finished:
+		return v.Finished
+	}
+	return nil
+}

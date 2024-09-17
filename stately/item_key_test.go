@@ -17,7 +17,7 @@ func TestToKeyID(t *testing.T) {
 		{
 			name:     "UUID",
 			given:    ToKeyID(uuid.MustParse("00000000-0000-0000-0000-000000000005")),
-			expected: "~AAAAAAAAAAAAAAAAAAAABQ",
+			expected: "AAAAAAAAAAAAAAAAAAAABQ",
 		},
 		{
 			name:     "String",
@@ -32,12 +32,12 @@ func TestToKeyID(t *testing.T) {
 				0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x50,
 			}),
-			expected: "~AAAAAAAAAAAAAAAAAAAAUA",
+			expected: "AAAAAAAAAAAAAAAAAAAAUA",
 		},
 		{
 			name:     "ByteSlice",
 			given:    ToKeyID([]byte{0x00, 0x01, 0x02, 0x03}),
-			expected: "~AAECAw",
+			expected: "AAECAw",
 		},
 		{
 			name:     "Uint64",
