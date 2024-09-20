@@ -40,8 +40,20 @@ type Options struct {
 	// defaulted to an appropriate implementation for most services.
 	AuthTokenProvider
 
-	// Endpoint is the Stately API endpoint.
-	// Defaults to https://api.stately.cloud
+	// Either Region or Endpoint should be set, but not both. Doing so will
+	// result in an error. An empty Region and Endpoint will default to
+	// https://api.stately.cloud
+	//
+	// Region is the Stately environment to use. This is used to determine
+	// the correct endpoint to use for SDK calls.
+	//
+	Region string
+
+	// Either Endpoint or Region should be set, but not both. Doing so will
+	// result in an error. An empty Region and Endpoint will default to
+	// https://api.stately.cloud
+	//
+	// Endpoint is the full URL to the Stately API endpoint to use.
 	Endpoint string
 
 	// JSONResponseFormat is a flag to indicate that the item in the response
@@ -88,9 +100,17 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 	if o == nil {
 		o = &Options{}
 	}
-	if o.Endpoint == "" {
-		o.Endpoint = "https://api.stately.cloud"
+
+	// If both endpoint and environment are provided, return an error.
+	if o.Endpoint != "" && o.Region != "" && o.Endpoint != RegionToEndpoint(o.Region) {
+		return nil, fmt.Errorf("both Endpoint: %q and Region: %q are set in options. "+
+			"Please provide one or the other, "+
+			"or neither to default to https://api.stately.cloud", o.Endpoint, o.Region)
+	} else if o.Endpoint == "" {
+		// If there's no endpoint specified, use the region.
+		o.Endpoint = RegionToEndpoint(o.Region)
 	}
+
 	if o.AuthTokenProvider == nil {
 		clientID := o.ClientID
 		if clientID == "" {
@@ -128,6 +148,9 @@ func (o *Options) Merge(o2 *Options) *Options {
 	}
 	if o2.Endpoint != "" {
 		o.Endpoint = o2.Endpoint
+	}
+	if o2.Region != "" {
+		o.Region = o2.Region
 	}
 	if o2.JSONResponseFormat {
 		o.JSONResponseFormat = o2.JSONResponseFormat

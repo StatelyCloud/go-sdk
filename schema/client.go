@@ -54,7 +54,7 @@ type Client interface {
 }
 
 // NewClient creates a new client with the given store and options.
-func NewClient(appCtx context.Context, storeID stately.StoreID, options ...*stately.Options) (Client, error) {
+func NewClient(appCtx context.Context, storeID uint64, options ...*stately.Options) (Client, error) {
 	opts := &stately.Options{}
 	for _, o := range options {
 		opts = opts.Merge(o)
@@ -71,6 +71,6 @@ func NewClient(appCtx context.Context, storeID stately.StoreID, options ...*stat
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
 		),
-		storeID: storeID,
+		storeID: stately.StoreID(storeID),
 	}, nil
 }

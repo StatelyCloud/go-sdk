@@ -90,9 +90,10 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 
 			for k, store := range projNode.Stores {
 				projects[j].Stores[k] = &dbmanagement.StoreInfo{
-					ID:          stately.StoreID(store.GetStore().GetStoreId()),
-					Name:        store.GetStore().GetName(),
-					Description: store.GetStore().GetDescription(),
+					ID:            stately.StoreID(store.GetStore().GetStoreId()),
+					Name:          store.GetStore().GetName(),
+					Description:   store.GetStore().GetDescription(),
+					DefaultRegion: store.GetStore().GetDefaultRegion(),
 				}
 			}
 		}

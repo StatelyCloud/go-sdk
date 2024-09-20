@@ -1,6 +1,6 @@
 # StatelyDB SDK for Go
 
-This is the Go SDK for [StatelyDB](https://stately.cloud). 
+This is the Go SDK for [StatelyDB](https://stately.cloud).
 
 ### Getting started:
 
@@ -15,7 +15,7 @@ When you join the preview program, we'll set you up with a few bits of informati
 3. A store ID that identifies which store in your organization you're using.
 4. Access to our in-depth [Getting Started Guide].
 
-Begin by following our [Getting Started Guide] which will help you define, generate, and publish a DB schema so that it can be used.  
+Begin by following our [Getting Started Guide] which will help you define, generate, and publish a DB schema so that it can be used.
 
 ##### Install the SDK
 
@@ -23,9 +23,9 @@ Begin by following our [Getting Started Guide] which will help you define, gener
 go get -u github.com/StatelyCloud/go-sdk
 ```
 
-### Usage: 
+### Usage:
 
-After [Defining Schema], be sure to generate a schema in a go module where it can be referenced. For the purposes of this readme ths will be `github.com/Project/Package/schema`. 
+After [Defining Schema], be sure to generate a schema in a go module where it can be referenced. For the purposes of this readme ths will be `github.com/Project/Package/schema`.
 
 ###### Instantiate an Authenticated Client
 
@@ -42,10 +42,10 @@ func main() {
 	ctx := context.Background() // TODO: Use a real context please
 	// Create a client. This will use the environment variables
 	// STATELY_CLIENT_ID and STATELY_CLIENT_SECRET for your client.
-	client, err := schema.NewClient(ctx, stately.StoreID(12345))
+	client, err := schema.NewClient(ctx, 12345)
 	if err != nil { ... }
-	
-	// Alternatively: 
+
+	// Alternatively:
 	client, err := schema.NewClient(ctx, *stately.Options{
 		ClientID: "myClientID",
 		ClientSecret: "myClientSecret",
@@ -66,10 +66,10 @@ func PutMyItem(ctx context.Context, client stately.Client) error {
 	}
 	putResult, err := client.Put(ctx, item)
 	if err != nil { ... }
-	
+
 	getResult, err := client.Get(ctx, "/user-i_am_jane")
     if err != nil { ... }
-	
+
 	// etc.
 }
 ```

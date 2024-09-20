@@ -174,9 +174,13 @@ type Transaction interface {
 type TransactionHandler func(Transaction) error
 
 // NewClient creates a new client with the given store and options.
+// If your store is regional, you can pass in the region to use.
+// Example:
+//
+//	client, err := stately.NewClient(ctx, 1234, itemTypeMapper, stately.Option{Region: "us-east-1"})
 func NewClient(
 	appCtx context.Context,
-	storeID StoreID,
+	storeID uint64,
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
 ) (Client, error) {
@@ -199,7 +203,7 @@ func NewClient(
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
 		),
-		storeID:    storeID,
+		storeID:    StoreID(storeID),
 		itemMapper: itemTypeMapper,
 	}, nil
 }
