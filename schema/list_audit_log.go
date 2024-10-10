@@ -6,10 +6,12 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/StatelyCloud/go-sdk/pb/schemaservice"
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 func (c *schemaClient) ListAuditLog(
 	ctx context.Context,
+	schemaID stately.SchemaID,
 	options ...*ListAuditLogOptions,
 ) ([]*schemaservice.SchemaAuditLogEntry, error) {
 	// only take the first option or use the default
@@ -19,8 +21,8 @@ func (c *schemaClient) ListAuditLog(
 		opts = options[0]
 	}
 	resp, err := c.client.ListAuditLog(ctx, connect.NewRequest(&schemaservice.ListAuditLogRequest{
-		StoreId: uint64(c.storeID),
-		Limit:   opts.Limit,
+		SchemaId: uint64(schemaID),
+		Limit:    opts.Limit,
 	}))
 	if err != nil {
 		return nil, err

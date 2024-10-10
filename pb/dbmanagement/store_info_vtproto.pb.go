@@ -26,6 +26,7 @@ func (m *StoreInfo) CloneVT() *StoreInfo {
 	r := new(StoreInfo)
 	r.StoreId = m.StoreId
 	r.Name = m.Name
+	r.SchemaId = m.SchemaId
 	r.Description = m.Description
 	r.DefaultRegion = m.DefaultRegion
 	if len(m.unknownFields) > 0 {
@@ -45,6 +46,7 @@ func (m *StoreConfig) CloneVT() *StoreConfig {
 	}
 	r := new(StoreConfig)
 	r.StoreId = m.StoreId
+	r.SchemaId = m.SchemaId
 	r.Name = m.Name
 	r.Description = m.Description
 	r.ProjectId = m.ProjectId
@@ -136,6 +138,9 @@ func (this *StoreInfo) EqualVT(that *StoreInfo) bool {
 	if this.DefaultRegion != that.DefaultRegion {
 		return false
 	}
+	if this.SchemaId != that.SchemaId {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -211,6 +216,9 @@ func (this *StoreConfig) EqualVT(that *StoreConfig) bool {
 		}
 	}
 	if !this.RegionalConfig.EqualVT(that.RegionalConfig) {
+		return false
+	}
+	if this.SchemaId != that.SchemaId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -305,6 +313,11 @@ func (m *StoreInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.SchemaId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaId))
+		i--
+		dAtA[i] = 0x28
+	}
 	if m.DefaultRegion != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.DefaultRegion))
 		i--
@@ -361,6 +374,11 @@ func (m *StoreConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaId))
+		i--
+		dAtA[i] = 0x60
 	}
 	if m.RegionalConfig != nil {
 		size, err := m.RegionalConfig.MarshalToSizedBufferVT(dAtA[:i])
@@ -561,6 +579,9 @@ func (m *StoreInfo) SizeVT() (n int) {
 	if m.DefaultRegion != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.DefaultRegion))
 	}
+	if m.SchemaId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaId))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -615,6 +636,9 @@ func (m *StoreConfig) SizeVT() (n int) {
 	if m.RegionalConfig != nil {
 		l = m.RegionalConfig.SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.SchemaId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaId))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -776,6 +800,25 @@ func (m *StoreInfo) UnmarshalVT(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.DefaultRegion |= Region(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaId", wireType)
+			}
+			m.SchemaId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1164,6 +1207,25 @@ func (m *StoreConfig) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaId", wireType)
+			}
+			m.SchemaId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

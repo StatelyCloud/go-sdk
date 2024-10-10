@@ -14,47 +14,76 @@ import (
 )
 
 type schemaClient struct {
-	client  schemaserviceconnect.SchemaServiceClient
-	storeID stately.StoreID
+	client schemaserviceconnect.SchemaServiceClient
 }
 
-// Client is a stately schema client that interacts with the given store.
+// Client models all schema management related apis.
 type Client interface {
-	// Get retrieves the fully self-contained Schema for the corresponding Store
-	// ID. There is only one Schema per Store so the result of this call will
-	// contain the most up-to-date representation of the Items in the Store. It
-	// will fail if the caller does not have permission the Store.
-	// If the store does not have a schema yet, this will return nil, nil.
-	Get(ctx context.Context) (*schemaservice.SchemaModel, error)
+	// Get retrieves the fully self-contained Schema version for the corresponding Schema
+	// ID. The call will fail if the caller does not have permission the SchemaID.
+	Get(ctx context.Context, id stately.SchemaID, version stately.SchemaVersionID) (*schemaservice.SchemaModel, error)
 
-	// Put adds a Schema to the StatelyDB Schema Store or replaces the Schema if
-	// it already exists. If the caller attempts to put a Schema for a Store that
-	// does not exist the request will fail. If the caller does not have
-	// permissions to access the Store the request will fail. If the Schema is not
-	// valid the request will fail. If a Schema already exists for the Store then
-	// the update will only be accepted if the new Schema is backwards compatible
-	// with the existing Schema.
+	// Put appends a Schema version to the StatelyDB Schema. If the caller attempts
+	// to put a SchemaVersion for a Schema that does not exist the request will fail.
+	// If the caller does not have permissions to access the SchemaID the request will fail.
+	// If the Schema is not valid the request will fail. If a previous Schema
+	// already exists, then the new version will only be accepted if the
+	// new Schema is backwards compatible.
 	Put(
 		ctx context.Context,
 		fileDescriptor *descriptorpb.FileDescriptorProto,
 		changeDescription string,
+		schemaID stately.SchemaID,
 		options ...*PutOptions,
-	) (bool, *schemaservice.ValidateResponse, error)
+	) (*schemaservice.PutResponse, error)
 
+	// Validate ensures the provided file descriptor proto is a valid stately schema
+	// and returns a list of validation errors. This does not persist the schema
+	// nor does it require auth.
 	Validate(
 		ctx context.Context,
 		fileDescriptor *descriptorpb.FileDescriptorProto,
 	) (*schemaservice.ValidateResponse, error)
 
-	// ListAuditLog retrieves the audit log for the Schema associated with the provided storeId.
+	// ListAuditLog retrieves the audit log for the Schema associated with the provided schemaID.
 	// The audit log consists of a list of audit log entries that represent each change to the Schema including
 	// its creation. The list is ordered by the time of the change with the most recent change first.
-	// If there is no Schema for the provided Store ID, an empty list will be returned.
-	ListAuditLog(ctx context.Context, options ...*ListAuditLogOptions) ([]*schemaservice.SchemaAuditLogEntry, error)
+	// If there is no Schema for the provided Schema ID, an empty list will be returned.
+	ListAuditLog(
+		ctx context.Context,
+		schemaID stately.SchemaID,
+		options ...*ListAuditLogOptions,
+	) ([]*schemaservice.SchemaAuditLogEntry, error)
+
+	// Bind associates a Schema with a Store. The caller must have permission
+	// to access the SchemaID and StoreID. If a different Schema is already
+	// bound to the Store, the request will fail. The schemaID must exist
+	// in the same organization as the storeID or the request will fail.
+	//
+	// (option) force will perform the bind operation, even if the store is
+	// already bound to a schema. This is very dangerous if your store already
+	// has items that are not compatible with the new schema. You must be
+	// exceedingly sure the store is empty or that ALL items are compatible with
+	// the new schema.
+	Bind(
+		ctx context.Context,
+		schemaID stately.SchemaID,
+		storeID stately.StoreID,
+		force bool,
+	) error
+
+	// Create creates a new Schema with the given name and description.
+	// The caller must have permission to create a Schema in the organization
+	Create(
+		ctx context.Context,
+		projectID stately.ProjectID,
+		name string,
+		description string,
+	) (stately.SchemaID, error)
 }
 
-// NewClient creates a new client with the given store and options.
-func NewClient(appCtx context.Context, storeID uint64, options ...*stately.Options) (Client, error) {
+// NewClient creates a new client with the given options.
+func NewClient(appCtx context.Context, options ...*stately.Options) (Client, error) {
 	opts := &stately.Options{}
 	for _, o := range options {
 		opts = opts.Merge(o)
@@ -71,6 +100,5 @@ func NewClient(appCtx context.Context, storeID uint64, options ...*stately.Optio
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
 		),
-		storeID: stately.StoreID(storeID),
 	}, nil
 }

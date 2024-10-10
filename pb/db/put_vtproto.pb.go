@@ -25,6 +25,7 @@ func (m *PutRequest) CloneVT() *PutRequest {
 	}
 	r := new(PutRequest)
 	r.StoreId = m.StoreId
+	r.SchemaVersionId = m.SchemaVersionId
 	if rhs := m.Puts; rhs != nil {
 		tmpContainer := make([]*PutItem, len(rhs))
 		for k, v := range rhs {
@@ -108,6 +109,9 @@ func (this *PutRequest) EqualVT(that *PutRequest) bool {
 				return false
 			}
 		}
+	}
+	if this.SchemaVersionId != that.SchemaVersionId {
+		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
@@ -200,6 +204,11 @@ func (m *PutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaVersionId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
+		i--
+		dAtA[i] = 0x18
 	}
 	if len(m.Puts) > 0 {
 		for iNdEx := len(m.Puts) - 1; iNdEx >= 0; iNdEx-- {
@@ -324,6 +333,9 @@ func (m *PutRequest) SizeVT() (n int) {
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
 	}
+	if m.SchemaVersionId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -440,6 +452,25 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)
+			}
+			m.SchemaVersionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaVersionId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

@@ -21,7 +21,7 @@ func (c *client) Put(ctx context.Context, item Item) (Item, error) {
 	return responses[0], nil
 }
 
-// PutBatch adds one or more Items to the Store, or replaces the Items if they
+// PutBatch adds up to 50 Items to the Store, or replaces the Items if they
 // already exist at that path.
 //
 // This will fail if
@@ -37,8 +37,9 @@ func (c *client) PutBatch(ctx context.Context, batch ...Item) ([]Item, error) {
 	}
 
 	resp, err := c.client.Put(ctx, connect.NewRequest(&db.PutRequest{
-		StoreId: uint64(c.storeID),
-		Puts:    putItems,
+		StoreId:         uint64(c.storeID),
+		SchemaVersionId: uint32(c.schemaVersionID),
+		Puts:            putItems,
 	}))
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (c *client) PutBatch(ctx context.Context, batch ...Item) ([]Item, error) {
 	return batch, mapPutResponses(resp.Msg.GetItems(), batch)
 }
 
-// shared between transactional and non-transactional put.
+// Shared between transactional and non-transactional put.
 func mapPutRequest(batchRequest []Item) ([]*db.PutItem, error) {
 	// Build the put items
 	putItems := make([]*db.PutItem, len(batchRequest))

@@ -30,6 +30,7 @@ func (m *BeginListRequest) CloneVT() *BeginListRequest {
 	r.AllowStale = m.AllowStale
 	r.SortProperty = m.SortProperty
 	r.SortDirection = m.SortDirection
+	r.SchemaVersionId = m.SchemaVersionId
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -142,6 +143,9 @@ func (this *BeginListRequest) EqualVT(that *BeginListRequest) bool {
 		return false
 	}
 	if this.SortDirection != that.SortDirection {
+		return false
+	}
+	if this.SchemaVersionId != that.SchemaVersionId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -313,6 +317,11 @@ func (m *BeginListRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaVersionId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
+		i--
+		dAtA[i] = 0x38
 	}
 	if m.SortDirection != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SortDirection))
@@ -547,6 +556,9 @@ func (m *BeginListRequest) SizeVT() (n int) {
 	if m.SortDirection != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortDirection))
 	}
+	if m.SchemaVersionId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -771,6 +783,25 @@ func (m *BeginListRequest) UnmarshalVT(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.SortDirection |= SortDirection(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)
+			}
+			m.SchemaVersionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaVersionId |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

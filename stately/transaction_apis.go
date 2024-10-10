@@ -20,7 +20,7 @@ func (t *transaction) Get(item string) (Item, error) {
 	return items[0], nil
 }
 
-// GetBatch retrieves items from the store.
+// GetBatch retrieves up to 100 items from the store.
 func (t *transaction) GetBatch(itemKeys ...string) ([]Item, error) {
 	req := t.newTXNReq(&db.TransactionRequest_GetItems{
 		GetItems: &db.TransactionGet{Gets: mapToItemKey(itemKeys)},
@@ -57,7 +57,7 @@ func (t *transaction) Put(item Item) (GeneratedID, error) {
 	return items[0], nil
 }
 
-// PutBatch schedules items to be written with new keys on commit.
+// PutBatch schedules up to 50 items to be written with new keys on commit.
 func (t *transaction) PutBatch(items ...Item) ([]GeneratedID, error) {
 	putItems, err := mapPutRequest(items)
 	if err != nil {
@@ -100,7 +100,7 @@ func (t *transaction) PutBatch(items ...Item) ([]GeneratedID, error) {
 	return generatedIDs, nil
 }
 
-// Delete schedules items to be deleted on commit.
+// Delete schedules up to 50 items to be deleted on commit.
 func (t *transaction) Delete(itemKeys ...string) error {
 	err := t.safeSend(t.newTXNReq(&db.TransactionRequest_DeleteItems{
 		DeleteItems: &db.TransactionDelete{Deletes: mapDeleteRequest(itemKeys)},

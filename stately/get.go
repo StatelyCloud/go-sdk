@@ -21,16 +21,17 @@ func (c *client) Get(ctx context.Context, itemPath string) (Item, error) {
 	return items[0], nil
 }
 
-// GetBatch retrieves one or more Items by their full key paths. This will
+// GetBatch retrieves up to 50 Items by their full key paths. This will
 // return any of the Items that exist. It will fail if not all the GetItem
 // requests are under the same root item path, or if the caller does not have
 // permission to read Items. Use Query if you want to retrieve multiple items
 // but don't already know the full key paths of the items you want to get.
 func (c *client) GetBatch(ctx context.Context, itemPaths ...string) ([]Item, error) {
 	response, err := c.client.Get(ctx, connect.NewRequest(&db.GetRequest{
-		StoreId:    uint64(c.storeID),
-		Gets:       mapToItemKey(itemPaths),
-		AllowStale: c.allowStale,
+		StoreId:         uint64(c.storeID),
+		SchemaVersionId: uint32(c.schemaVersionID),
+		Gets:            mapToItemKey(itemPaths),
+		AllowStale:      c.allowStale,
 	}))
 	if err != nil {
 		return nil, err

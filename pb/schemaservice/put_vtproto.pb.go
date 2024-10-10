@@ -25,7 +25,8 @@ func (m *PutRequest) CloneVT() *PutRequest {
 		return (*PutRequest)(nil)
 	}
 	r := new(PutRequest)
-	r.StoreId = m.StoreId
+	r.SchemaId = m.SchemaId
+	r.LegacyStoreId = m.LegacyStoreId
 	r.DryRun = m.DryRun
 	r.ChangeDescription = m.ChangeDescription
 	r.AllowBackwardsIncompatible = m.AllowBackwardsIncompatible
@@ -56,6 +57,7 @@ func (m *PutResponse) CloneVT() *PutResponse {
 	r := new(PutResponse)
 	r.ValidateResponse = m.ValidateResponse.CloneVT()
 	r.Committed = m.Committed
+	r.SchemaVersionId = m.SchemaVersionId
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -73,7 +75,7 @@ func (this *PutRequest) EqualVT(that *PutRequest) bool {
 	} else if this == nil || that == nil {
 		return false
 	}
-	if this.StoreId != that.StoreId {
+	if this.LegacyStoreId != that.LegacyStoreId {
 		return false
 	}
 	if equal, ok := interface{}(this.FileDescriptor).(interface {
@@ -92,6 +94,9 @@ func (this *PutRequest) EqualVT(that *PutRequest) bool {
 		return false
 	}
 	if this.AllowBackwardsIncompatible != that.AllowBackwardsIncompatible {
+		return false
+	}
+	if this.SchemaId != that.SchemaId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -114,6 +119,9 @@ func (this *PutResponse) EqualVT(that *PutResponse) bool {
 		return false
 	}
 	if this.Committed != that.Committed {
+		return false
+	}
+	if this.SchemaVersionId != that.SchemaVersionId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -155,6 +163,11 @@ func (m *PutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaId))
+		i--
+		dAtA[i] = 0x30
 	}
 	if m.AllowBackwardsIncompatible {
 		i--
@@ -205,8 +218,8 @@ func (m *PutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.StoreId != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.StoreId))
+	if m.LegacyStoreId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.LegacyStoreId))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -243,6 +256,11 @@ func (m *PutResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.SchemaVersionId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.Committed {
 		i--
 		if m.Committed {
@@ -272,8 +290,8 @@ func (m *PutRequest) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
-	if m.StoreId != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.StoreId))
+	if m.LegacyStoreId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.LegacyStoreId))
 	}
 	if m.FileDescriptor != nil {
 		if size, ok := interface{}(m.FileDescriptor).(interface {
@@ -295,6 +313,9 @@ func (m *PutRequest) SizeVT() (n int) {
 	if m.AllowBackwardsIncompatible {
 		n += 2
 	}
+	if m.SchemaId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaId))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -311,6 +332,9 @@ func (m *PutResponse) SizeVT() (n int) {
 	}
 	if m.Committed {
 		n += 2
+	}
+	if m.SchemaVersionId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -347,9 +371,9 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StoreId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field LegacyStoreId", wireType)
 			}
-			m.StoreId = 0
+			m.LegacyStoreId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return protohelpers.ErrIntOverflow
@@ -359,7 +383,7 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StoreId |= uint64(b&0x7F) << shift
+				m.LegacyStoreId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -480,6 +504,25 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.AllowBackwardsIncompatible = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaId", wireType)
+			}
+			m.SchemaId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -587,6 +630,25 @@ func (m *PutResponse) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.Committed = bool(v != 0)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)
+			}
+			m.SchemaVersionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaVersionId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

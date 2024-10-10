@@ -8,7 +8,7 @@ import (
 	"github.com/StatelyCloud/go-sdk/pb/db"
 )
 
-// Delete removes one or more Items from the Store by their full key
+// Delete removes up to 50 Items from the Store by their full key
 // paths. This will fail if any Item does not exist, if not all the
 // DeleteItem requests are under the same root item path, or if the caller does
 // not have permission to delete Items. Tombstones will be left for deleted
@@ -16,8 +16,9 @@ import (
 // the request are applied atomically - there are no partial successes.
 func (c *client) Delete(ctx context.Context, itemPaths ...string) error {
 	_, err := c.client.Delete(ctx, connect.NewRequest(&db.DeleteRequest{
-		StoreId: uint64(c.storeID),
-		Deletes: mapDeleteRequest(itemPaths),
+		StoreId:         uint64(c.storeID),
+		Deletes:         mapDeleteRequest(itemPaths),
+		SchemaVersionId: uint32(c.schemaVersionID),
 	}))
 	return err
 }

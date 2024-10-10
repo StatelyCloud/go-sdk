@@ -7,14 +7,16 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/StatelyCloud/go-sdk/pb/schemaservice"
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 func (c *schemaClient) Put(
 	ctx context.Context,
 	fileDescriptor *descriptorpb.FileDescriptorProto,
 	changeDescription string,
+	schemaID stately.SchemaID,
 	options ...*PutOptions,
-) (bool, *schemaservice.ValidateResponse, error) {
+) (*schemaservice.PutResponse, error) {
 	// only take the first option or use the default
 	// if no options are provided
 	opts := &PutOptions{}
@@ -23,16 +25,16 @@ func (c *schemaClient) Put(
 	}
 
 	resp, err := c.client.Put(ctx, connect.NewRequest(&schemaservice.PutRequest{
-		StoreId:                    uint64(c.storeID),
+		SchemaId:                   uint64(schemaID),
 		FileDescriptor:             fileDescriptor,
 		ChangeDescription:          changeDescription,
 		DryRun:                     opts.DryRun,
 		AllowBackwardsIncompatible: opts.Force,
 	}))
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
-	return resp.Msg.Committed, resp.Msg.ValidateResponse, err
+	return resp.Msg, err
 }
 
 // PutOptions are optional parameters for Put.

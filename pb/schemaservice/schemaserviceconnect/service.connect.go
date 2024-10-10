@@ -39,8 +39,10 @@ const (
 	SchemaServiceValidateProcedure = "/stately.schemaservice.SchemaService/Validate"
 	// SchemaServiceGetProcedure is the fully-qualified name of the SchemaService's Get RPC.
 	SchemaServiceGetProcedure = "/stately.schemaservice.SchemaService/Get"
-	// SchemaServiceDeleteProcedure is the fully-qualified name of the SchemaService's Delete RPC.
-	SchemaServiceDeleteProcedure = "/stately.schemaservice.SchemaService/Delete"
+	// SchemaServiceCreateProcedure is the fully-qualified name of the SchemaService's Create RPC.
+	SchemaServiceCreateProcedure = "/stately.schemaservice.SchemaService/Create"
+	// SchemaServiceBindProcedure is the fully-qualified name of the SchemaService's Bind RPC.
+	SchemaServiceBindProcedure = "/stately.schemaservice.SchemaService/Bind"
 	// SchemaServiceListAuditLogProcedure is the fully-qualified name of the SchemaService's
 	// ListAuditLog RPC.
 	SchemaServiceListAuditLogProcedure = "/stately.schemaservice.SchemaService/ListAuditLog"
@@ -52,26 +54,26 @@ var (
 	schemaServicePutMethodDescriptor          = schemaServiceServiceDescriptor.Methods().ByName("Put")
 	schemaServiceValidateMethodDescriptor     = schemaServiceServiceDescriptor.Methods().ByName("Validate")
 	schemaServiceGetMethodDescriptor          = schemaServiceServiceDescriptor.Methods().ByName("Get")
-	schemaServiceDeleteMethodDescriptor       = schemaServiceServiceDescriptor.Methods().ByName("Delete")
+	schemaServiceCreateMethodDescriptor       = schemaServiceServiceDescriptor.Methods().ByName("Create")
+	schemaServiceBindMethodDescriptor         = schemaServiceServiceDescriptor.Methods().ByName("Bind")
 	schemaServiceListAuditLogMethodDescriptor = schemaServiceServiceDescriptor.Methods().ByName("ListAuditLog")
 )
 
 // SchemaServiceClient is a client for the stately.schemaservice.SchemaService service.
 type SchemaServiceClient interface {
-	// Put adds a Schema to the StatelyDB Schema Store or replaces the Schema if
-	// it already exists. If the caller attempts to put a Schema for a Store that
-	// does not exist the request will fail. If the caller does not have
-	// permissions to access the Store the request will fail. If the Schema is not
-	// valid the request will fail. If a Schema already exists for the Store then
-	// the update will only be accepted if the new Schema is backwards compatible
-	// with the existing Schema. If the schema is invalid the response will
-	// contain a list of individual validation errors.
+	// Put adds a Schema version to the StatelyDB SchemaID. If the caller attempts
+	// to put a Schema for a SchemaID that does not exist the request will fail.
+	// If the caller does not have permissions to access the Schema the request
+	// will fail. If the Schema is not valid the request will fail. If a previous
+	// version of the Schema exists for the SchemaID then the update will only be
+	// accepted if the new Schema is backwards compatible. Invalid responses
+	// will contain a list of individual validation errors.
 	Put(context.Context, *connect.Request[schemaservice.PutRequest]) (*connect.Response[schemaservice.PutResponse], error)
 	// Validate runs all of Stately's semantic validations on the provided Schema.
 	// This is helpful for validating a stand alone Schema file for iterative
 	// feedback. This is different than a PutRequest in dry_run mode as it does
 	// not check for backwards compatibility with the existing Schema and thus
-	// does not require a store_id or permissions. If the schema is invalid the
+	// does not require a schema_id or permissions. If the schema is invalid the
 	// response will contain a list of individual validation errors.
 	Validate(context.Context, *connect.Request[schemaservice.ValidateRequest]) (*connect.Response[schemaservice.ValidateResponse], error)
 	// Get retrieves the fully self-contained Schema for the corresponding Store
@@ -79,9 +81,19 @@ type SchemaServiceClient interface {
 	// contain the most up-to-date representation of the Items in the Store. It
 	// will fail if the caller does not have permission the Store.
 	Get(context.Context, *connect.Request[schemaservice.GetRequest]) (*connect.Response[schemaservice.GetResponse], error)
-	// Delete deletes the Schema for the corresponding Store ID.
-	// This is an unsafe operation and can only be performed by an admin user.
-	Delete(context.Context, *connect.Request[schemaservice.DeleteRequest]) (*connect.Response[schemaservice.DeleteResponse], error)
+	// Create will create a new Schema for the given Project ID. The Schema will
+	// be empty until the first "put". The schema can be bound to a store
+	// using the Bind API before or after your put a schema to it.
+	// The request will fail if the caller does not have permission to access the Project.
+	Create(context.Context, *connect.Request[schemaservice.CreateRequest]) (*connect.Response[schemaservice.CreateResponse], error)
+	// Bind will bind the given SchemaID with the given StoreID. Only one Schema
+	// can be bound to a Store at a time (for now).
+	// The request will fail if:
+	// The SchemaID is not found or already bound to a Store.
+	// The StoreID is not found.
+	// The caller does not have permission to access the Store.
+	// The store and schema are in different orgs.
+	Bind(context.Context, *connect.Request[schemaservice.BindRequest]) (*connect.Response[schemaservice.BindResponse], error)
 	// ListAuditLog retrieves the audit log for the Schema associated with the provided Store ID.
 	// The audit log consists of a list of audit log entries that represent each change to the Schema including
 	// its creation.
@@ -102,7 +114,6 @@ func NewSchemaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+SchemaServicePutProcedure,
 			connect.WithSchema(schemaServicePutMethodDescriptor),
-			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
 		validate: connect.NewClient[schemaservice.ValidateRequest, schemaservice.ValidateResponse](
@@ -119,10 +130,16 @@ func NewSchemaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
-		delete: connect.NewClient[schemaservice.DeleteRequest, schemaservice.DeleteResponse](
+		create: connect.NewClient[schemaservice.CreateRequest, schemaservice.CreateResponse](
 			httpClient,
-			baseURL+SchemaServiceDeleteProcedure,
-			connect.WithSchema(schemaServiceDeleteMethodDescriptor),
+			baseURL+SchemaServiceCreateProcedure,
+			connect.WithSchema(schemaServiceCreateMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		bind: connect.NewClient[schemaservice.BindRequest, schemaservice.BindResponse](
+			httpClient,
+			baseURL+SchemaServiceBindProcedure,
+			connect.WithSchema(schemaServiceBindMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyIdempotent),
 			connect.WithClientOptions(opts...),
 		),
@@ -141,7 +158,8 @@ type schemaServiceClient struct {
 	put          *connect.Client[schemaservice.PutRequest, schemaservice.PutResponse]
 	validate     *connect.Client[schemaservice.ValidateRequest, schemaservice.ValidateResponse]
 	get          *connect.Client[schemaservice.GetRequest, schemaservice.GetResponse]
-	delete       *connect.Client[schemaservice.DeleteRequest, schemaservice.DeleteResponse]
+	create       *connect.Client[schemaservice.CreateRequest, schemaservice.CreateResponse]
+	bind         *connect.Client[schemaservice.BindRequest, schemaservice.BindResponse]
 	listAuditLog *connect.Client[schemaservice.ListAuditLogRequest, schemaservice.ListAuditLogResponse]
 }
 
@@ -160,9 +178,14 @@ func (c *schemaServiceClient) Get(ctx context.Context, req *connect.Request[sche
 	return c.get.CallUnary(ctx, req)
 }
 
-// Delete calls stately.schemaservice.SchemaService.Delete.
-func (c *schemaServiceClient) Delete(ctx context.Context, req *connect.Request[schemaservice.DeleteRequest]) (*connect.Response[schemaservice.DeleteResponse], error) {
-	return c.delete.CallUnary(ctx, req)
+// Create calls stately.schemaservice.SchemaService.Create.
+func (c *schemaServiceClient) Create(ctx context.Context, req *connect.Request[schemaservice.CreateRequest]) (*connect.Response[schemaservice.CreateResponse], error) {
+	return c.create.CallUnary(ctx, req)
+}
+
+// Bind calls stately.schemaservice.SchemaService.Bind.
+func (c *schemaServiceClient) Bind(ctx context.Context, req *connect.Request[schemaservice.BindRequest]) (*connect.Response[schemaservice.BindResponse], error) {
+	return c.bind.CallUnary(ctx, req)
 }
 
 // ListAuditLog calls stately.schemaservice.SchemaService.ListAuditLog.
@@ -172,20 +195,19 @@ func (c *schemaServiceClient) ListAuditLog(ctx context.Context, req *connect.Req
 
 // SchemaServiceHandler is an implementation of the stately.schemaservice.SchemaService service.
 type SchemaServiceHandler interface {
-	// Put adds a Schema to the StatelyDB Schema Store or replaces the Schema if
-	// it already exists. If the caller attempts to put a Schema for a Store that
-	// does not exist the request will fail. If the caller does not have
-	// permissions to access the Store the request will fail. If the Schema is not
-	// valid the request will fail. If a Schema already exists for the Store then
-	// the update will only be accepted if the new Schema is backwards compatible
-	// with the existing Schema. If the schema is invalid the response will
-	// contain a list of individual validation errors.
+	// Put adds a Schema version to the StatelyDB SchemaID. If the caller attempts
+	// to put a Schema for a SchemaID that does not exist the request will fail.
+	// If the caller does not have permissions to access the Schema the request
+	// will fail. If the Schema is not valid the request will fail. If a previous
+	// version of the Schema exists for the SchemaID then the update will only be
+	// accepted if the new Schema is backwards compatible. Invalid responses
+	// will contain a list of individual validation errors.
 	Put(context.Context, *connect.Request[schemaservice.PutRequest]) (*connect.Response[schemaservice.PutResponse], error)
 	// Validate runs all of Stately's semantic validations on the provided Schema.
 	// This is helpful for validating a stand alone Schema file for iterative
 	// feedback. This is different than a PutRequest in dry_run mode as it does
 	// not check for backwards compatibility with the existing Schema and thus
-	// does not require a store_id or permissions. If the schema is invalid the
+	// does not require a schema_id or permissions. If the schema is invalid the
 	// response will contain a list of individual validation errors.
 	Validate(context.Context, *connect.Request[schemaservice.ValidateRequest]) (*connect.Response[schemaservice.ValidateResponse], error)
 	// Get retrieves the fully self-contained Schema for the corresponding Store
@@ -193,9 +215,19 @@ type SchemaServiceHandler interface {
 	// contain the most up-to-date representation of the Items in the Store. It
 	// will fail if the caller does not have permission the Store.
 	Get(context.Context, *connect.Request[schemaservice.GetRequest]) (*connect.Response[schemaservice.GetResponse], error)
-	// Delete deletes the Schema for the corresponding Store ID.
-	// This is an unsafe operation and can only be performed by an admin user.
-	Delete(context.Context, *connect.Request[schemaservice.DeleteRequest]) (*connect.Response[schemaservice.DeleteResponse], error)
+	// Create will create a new Schema for the given Project ID. The Schema will
+	// be empty until the first "put". The schema can be bound to a store
+	// using the Bind API before or after your put a schema to it.
+	// The request will fail if the caller does not have permission to access the Project.
+	Create(context.Context, *connect.Request[schemaservice.CreateRequest]) (*connect.Response[schemaservice.CreateResponse], error)
+	// Bind will bind the given SchemaID with the given StoreID. Only one Schema
+	// can be bound to a Store at a time (for now).
+	// The request will fail if:
+	// The SchemaID is not found or already bound to a Store.
+	// The StoreID is not found.
+	// The caller does not have permission to access the Store.
+	// The store and schema are in different orgs.
+	Bind(context.Context, *connect.Request[schemaservice.BindRequest]) (*connect.Response[schemaservice.BindResponse], error)
 	// ListAuditLog retrieves the audit log for the Schema associated with the provided Store ID.
 	// The audit log consists of a list of audit log entries that represent each change to the Schema including
 	// its creation.
@@ -212,7 +244,6 @@ func NewSchemaServiceHandler(svc SchemaServiceHandler, opts ...connect.HandlerOp
 		SchemaServicePutProcedure,
 		svc.Put,
 		connect.WithSchema(schemaServicePutMethodDescriptor),
-		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
 	schemaServiceValidateHandler := connect.NewUnaryHandler(
@@ -229,10 +260,16 @@ func NewSchemaServiceHandler(svc SchemaServiceHandler, opts ...connect.HandlerOp
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	schemaServiceDeleteHandler := connect.NewUnaryHandler(
-		SchemaServiceDeleteProcedure,
-		svc.Delete,
-		connect.WithSchema(schemaServiceDeleteMethodDescriptor),
+	schemaServiceCreateHandler := connect.NewUnaryHandler(
+		SchemaServiceCreateProcedure,
+		svc.Create,
+		connect.WithSchema(schemaServiceCreateMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	schemaServiceBindHandler := connect.NewUnaryHandler(
+		SchemaServiceBindProcedure,
+		svc.Bind,
+		connect.WithSchema(schemaServiceBindMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyIdempotent),
 		connect.WithHandlerOptions(opts...),
 	)
@@ -251,8 +288,10 @@ func NewSchemaServiceHandler(svc SchemaServiceHandler, opts ...connect.HandlerOp
 			schemaServiceValidateHandler.ServeHTTP(w, r)
 		case SchemaServiceGetProcedure:
 			schemaServiceGetHandler.ServeHTTP(w, r)
-		case SchemaServiceDeleteProcedure:
-			schemaServiceDeleteHandler.ServeHTTP(w, r)
+		case SchemaServiceCreateProcedure:
+			schemaServiceCreateHandler.ServeHTTP(w, r)
+		case SchemaServiceBindProcedure:
+			schemaServiceBindHandler.ServeHTTP(w, r)
 		case SchemaServiceListAuditLogProcedure:
 			schemaServiceListAuditLogHandler.ServeHTTP(w, r)
 		default:
@@ -276,8 +315,12 @@ func (UnimplementedSchemaServiceHandler) Get(context.Context, *connect.Request[s
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.schemaservice.SchemaService.Get is not implemented"))
 }
 
-func (UnimplementedSchemaServiceHandler) Delete(context.Context, *connect.Request[schemaservice.DeleteRequest]) (*connect.Response[schemaservice.DeleteResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.schemaservice.SchemaService.Delete is not implemented"))
+func (UnimplementedSchemaServiceHandler) Create(context.Context, *connect.Request[schemaservice.CreateRequest]) (*connect.Response[schemaservice.CreateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.schemaservice.SchemaService.Create is not implemented"))
+}
+
+func (UnimplementedSchemaServiceHandler) Bind(context.Context, *connect.Request[schemaservice.BindRequest]) (*connect.Response[schemaservice.BindResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.schemaservice.SchemaService.Bind is not implemented"))
 }
 
 func (UnimplementedSchemaServiceHandler) ListAuditLog(context.Context, *connect.Request[schemaservice.ListAuditLogRequest]) (*connect.Response[schemaservice.ListAuditLogResponse], error) {

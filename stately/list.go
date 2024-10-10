@@ -208,12 +208,13 @@ func (c *client) BeginList(
 	}
 
 	response, err := c.client.BeginList(ctx, connect.NewRequest(&db.BeginListRequest{
-		StoreId:       uint64(c.storeID),
-		KeyPathPrefix: keyPath,
-		AllowStale:    c.allowStale,
-		Limit:         options.Limit,
-		SortProperty:  db.SortableProperty(options.SortableProperty),
-		SortDirection: db.SortDirection(options.SortDirection),
+		StoreId:         uint64(c.storeID),
+		SchemaVersionId: uint32(c.schemaVersionID),
+		KeyPathPrefix:   keyPath,
+		AllowStale:      c.allowStale,
+		Limit:           options.Limit,
+		SortProperty:    db.SortableProperty(options.SortableProperty),
+		SortDirection:   db.SortDirection(options.SortDirection),
 	}))
 	if err != nil {
 		return nil, err

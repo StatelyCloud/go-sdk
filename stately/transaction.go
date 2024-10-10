@@ -14,7 +14,7 @@ import (
 )
 
 // NewTransaction starts a transaction and then hands transaction to your
-// handler to preform all the logic necessary. If the handler returns an
+// handler to perform all the logic necessary. If the handler returns an
 // error, the transaction will be aborted. If the handler returns nil, the
 // transaction will be committed.
 func (c *client) NewTransaction(ctx context.Context, handler TransactionHandler) (*TransactionResults, error) {
@@ -27,7 +27,7 @@ func (c *client) NewTransaction(ctx context.Context, handler TransactionHandler)
 	}(txn)
 
 	// begin the transaction and hand it to the handler
-	if err := txn.begin(c.storeID); err != nil {
+	if err := txn.begin(c.storeID, c.schemaVersionID); err != nil {
 		return nil, err
 	}
 
@@ -55,9 +55,12 @@ type transaction struct {
 	putRequests []Item
 }
 
-func (t *transaction) begin(id StoreID) error {
+func (t *transaction) begin(id StoreID, vID SchemaVersionID) error {
 	return t.safeSend(t.newTXNReq(&db.TransactionRequest_Begin{
-		Begin: &db.TransactionBegin{StoreId: uint64(id)},
+		Begin: &db.TransactionBegin{
+			StoreId:         uint64(id),
+			SchemaVersionId: uint32(vID),
+		},
 	}))
 }
 

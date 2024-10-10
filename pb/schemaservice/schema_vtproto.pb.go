@@ -28,6 +28,8 @@ func (m *SchemaModel) CloneVT() *SchemaModel {
 	r.LastModifiedAtMicros = m.LastModifiedAtMicros
 	r.CreatedAtMicros = m.CreatedAtMicros
 	r.FormattedSchema = m.FormattedSchema
+	r.SchemaVersionId = m.SchemaVersionId
+	r.SchemaId = m.SchemaId
 	if rhs := m.FileDescriptor; rhs != nil {
 		if vtpb, ok := interface{}(rhs).(interface {
 			CloneVT() *descriptorpb.FileDescriptorProto
@@ -72,6 +74,12 @@ func (this *SchemaModel) EqualVT(that *SchemaModel) bool {
 	if this.FormattedSchema != that.FormattedSchema {
 		return false
 	}
+	if this.SchemaVersionId != that.SchemaVersionId {
+		return false
+	}
+	if this.SchemaId != that.SchemaId {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -111,6 +119,16 @@ func (m *SchemaModel) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaId))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.SchemaVersionId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
+		i--
+		dAtA[i] = 0x28
 	}
 	if len(m.FormattedSchema) > 0 {
 		i -= len(m.FormattedSchema)
@@ -179,6 +197,12 @@ func (m *SchemaModel) SizeVT() (n int) {
 	l = len(m.FormattedSchema)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.SchemaVersionId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
+	}
+	if m.SchemaId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaId))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -327,6 +351,44 @@ func (m *SchemaModel) UnmarshalVT(dAtA []byte) error {
 			}
 			m.FormattedSchema = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)
+			}
+			m.SchemaVersionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaVersionId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaId", wireType)
+			}
+			m.SchemaId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

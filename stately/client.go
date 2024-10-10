@@ -12,9 +12,10 @@ import (
 )
 
 type client struct {
-	client     dbconnect.DatabaseServiceClient
-	storeID    StoreID
-	itemMapper ItemTypeMapper
+	client          dbconnect.DatabaseServiceClient
+	storeID         StoreID
+	schemaVersionID SchemaVersionID
+	itemMapper      ItemTypeMapper
 
 	// allowStale indicates whether operations like get and list can return
 	// slightly stale data.
@@ -181,6 +182,7 @@ type TransactionHandler func(Transaction) error
 func NewClient(
 	appCtx context.Context,
 	storeID uint64,
+	// TODO we will introduce schemaVersionID here but for now we will always default to 0, which should be latest
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
 ) (Client, error) {
