@@ -12,3 +12,10 @@ type StoreInfo struct {
 	Description   string
 	DefaultRegion dbmanagement.Region
 }
+
+// SchemaInfo is information about the schema.
+type SchemaInfo struct {
+	ID          stately.SchemaID
+	Name        string
+	Description string
+}

@@ -85,7 +85,8 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 					Name:        projNode.Project.Name,
 					Description: projNode.Project.Description,
 				},
-				Stores: make([]*dbmanagement.StoreInfo, len(projNode.Stores)),
+				Stores:  make([]*dbmanagement.StoreInfo, len(projNode.Stores)),
+				Schemas: make([]*dbmanagement.SchemaInfo, len(projNode.Schemas)),
 			}
 
 			for k, store := range projNode.Stores {
@@ -94,6 +95,13 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 					Name:          store.GetStore().GetName(),
 					Description:   store.GetStore().GetDescription(),
 					DefaultRegion: store.GetStore().GetDefaultRegion(),
+				}
+			}
+			for k, schema := range projNode.Schemas {
+				projects[j].Schemas[k] = &dbmanagement.SchemaInfo{
+					ID:          stately.SchemaID(schema.GetSchemaId()),
+					Name:        schema.GetName(),
+					Description: schema.GetDescription(),
 				}
 			}
 		}

@@ -102,6 +102,19 @@ func (m *ProjectNode) CloneVT() *ProjectNode {
 		}
 		r.Stores = tmpContainer
 	}
+	if rhs := m.Schemas; rhs != nil {
+		tmpContainer := make([]*dbmanagement.SchemaInfo, len(rhs))
+		for k, v := range rhs {
+			if vtpb, ok := interface{}(v).(interface {
+				CloneVT() *dbmanagement.SchemaInfo
+			}); ok {
+				tmpContainer[k] = vtpb.CloneVT()
+			} else {
+				tmpContainer[k] = proto.Clone(v).(*dbmanagement.SchemaInfo)
+			}
+		}
+		r.Schemas = tmpContainer
+	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -263,6 +276,29 @@ func (this *ProjectNode) EqualVT(that *ProjectNode) bool {
 				q = &StoreNode{}
 			}
 			if !p.EqualVT(q) {
+				return false
+			}
+		}
+	}
+	if len(this.Schemas) != len(that.Schemas) {
+		return false
+	}
+	for i, vx := range this.Schemas {
+		vy := that.Schemas[i]
+		if p, q := vx, vy; p != q {
+			if p == nil {
+				p = &dbmanagement.SchemaInfo{}
+			}
+			if q == nil {
+				q = &dbmanagement.SchemaInfo{}
+			}
+			if equal, ok := interface{}(p).(interface {
+				EqualVT(*dbmanagement.SchemaInfo) bool
+			}); ok {
+				if !equal.EqualVT(q) {
+					return false
+				}
+			} else if !proto.Equal(p, q) {
 				return false
 			}
 		}
@@ -506,6 +542,30 @@ func (m *ProjectNode) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if len(m.Schemas) > 0 {
+		for iNdEx := len(m.Schemas) - 1; iNdEx >= 0; iNdEx-- {
+			if vtmsg, ok := interface{}(m.Schemas[iNdEx]).(interface {
+				MarshalToSizedBufferVT([]byte) (int, error)
+			}); ok {
+				size, err := vtmsg.MarshalToSizedBufferVT(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+			} else {
+				encoded, err := proto.Marshal(m.Schemas[iNdEx])
+				if err != nil {
+					return 0, err
+				}
+				i -= len(encoded)
+				copy(dAtA[i:], encoded)
+				i = protohelpers.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
 	if len(m.Stores) > 0 {
 		for iNdEx := len(m.Stores) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Stores[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -666,6 +726,18 @@ func (m *ProjectNode) SizeVT() (n int) {
 	if len(m.Stores) > 0 {
 		for _, e := range m.Stores {
 			l = e.SizeVT()
+			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+		}
+	}
+	if len(m.Schemas) > 0 {
+		for _, e := range m.Schemas {
+			if size, ok := interface{}(e).(interface {
+				SizeVT() int
+			}); ok {
+				l = size.SizeVT()
+			} else {
+				l = proto.Size(e)
+			}
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
 	}
@@ -1201,6 +1273,48 @@ func (m *ProjectNode) UnmarshalVT(dAtA []byte) error {
 			m.Stores = append(m.Stores, &StoreNode{})
 			if err := m.Stores[len(m.Stores)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Schemas", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Schemas = append(m.Schemas, &dbmanagement.SchemaInfo{})
+			if unmarshal, ok := interface{}(m.Schemas[len(m.Schemas)-1]).(interface {
+				UnmarshalVT([]byte) error
+			}); ok {
+				if err := unmarshal.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				if err := proto.Unmarshal(dAtA[iNdEx:postIndex], m.Schemas[len(m.Schemas)-1]); err != nil {
+					return err
+				}
 			}
 			iNdEx = postIndex
 		default:

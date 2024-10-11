@@ -21,6 +21,7 @@ type OrganizationInfo struct {
 type Project struct {
 	ProjectInfo *ProjectInfo
 	Stores      []*dbmanagement.StoreInfo
+	Schemas     []*dbmanagement.SchemaInfo
 }
 
 // ProjectInfo is info about the project.
