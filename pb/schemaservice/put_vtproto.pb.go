@@ -26,7 +26,6 @@ func (m *PutRequest) CloneVT() *PutRequest {
 	}
 	r := new(PutRequest)
 	r.SchemaId = m.SchemaId
-	r.LegacyStoreId = m.LegacyStoreId
 	r.DryRun = m.DryRun
 	r.ChangeDescription = m.ChangeDescription
 	r.AllowBackwardsIncompatible = m.AllowBackwardsIncompatible
@@ -73,9 +72,6 @@ func (this *PutRequest) EqualVT(that *PutRequest) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
-		return false
-	}
-	if this.LegacyStoreId != that.LegacyStoreId {
 		return false
 	}
 	if equal, ok := interface{}(this.FileDescriptor).(interface {
@@ -218,11 +214,6 @@ func (m *PutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.LegacyStoreId != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.LegacyStoreId))
-		i--
-		dAtA[i] = 0x8
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -290,9 +281,6 @@ func (m *PutRequest) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
-	if m.LegacyStoreId != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.LegacyStoreId))
-	}
 	if m.FileDescriptor != nil {
 		if size, ok := interface{}(m.FileDescriptor).(interface {
 			SizeVT() int
@@ -369,25 +357,6 @@ func (m *PutRequest) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: PutRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LegacyStoreId", wireType)
-			}
-			m.LegacyStoreId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LegacyStoreId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FileDescriptor", wireType)

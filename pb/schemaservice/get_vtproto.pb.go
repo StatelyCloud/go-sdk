@@ -24,7 +24,6 @@ func (m *GetRequest) CloneVT() *GetRequest {
 		return (*GetRequest)(nil)
 	}
 	r := new(GetRequest)
-	r.StoreId = m.StoreId
 	r.SchemaId = m.SchemaId
 	r.SchemaVersionId = m.SchemaVersionId
 	if len(m.unknownFields) > 0 {
@@ -59,9 +58,6 @@ func (this *GetRequest) EqualVT(that *GetRequest) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
-		return false
-	}
-	if this.StoreId != that.StoreId {
 		return false
 	}
 	if this.SchemaVersionId != that.SchemaVersionId {
@@ -139,11 +135,6 @@ func (m *GetRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x10
 	}
-	if m.StoreId != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.StoreId))
-		i--
-		dAtA[i] = 0x8
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -196,9 +187,6 @@ func (m *GetRequest) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
-	if m.StoreId != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.StoreId))
-	}
 	if m.SchemaVersionId != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
 	}
@@ -252,25 +240,6 @@ func (m *GetRequest) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: GetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StoreId", wireType)
-			}
-			m.StoreId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.StoreId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)

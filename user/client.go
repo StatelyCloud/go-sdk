@@ -95,6 +95,7 @@ func (c *clientImpl) Whoami(appCtx context.Context) (*WhoamiResponse, error) {
 					Name:          store.GetStore().GetName(),
 					Description:   store.GetStore().GetDescription(),
 					DefaultRegion: store.GetStore().GetDefaultRegion(),
+					SchemaID:      stately.SchemaID(store.GetStore().GetSchemaId()),
 				}
 			}
 			for k, schema := range projNode.Schemas {
