@@ -65,7 +65,7 @@ func (v *errorHandlingClientConn) Send(m any) error {
 // newEOF creates an EOF SDKError.
 func newEOF(msg, source string) error {
 	return &Error{
-		ConnectCode: connect.CodeFailedPrecondition,
+		Code:        connect.CodeFailedPrecondition,
 		StatelyCode: "StreamClosed",
 		Message:     msg,
 		attrs: map[string]string{
@@ -83,7 +83,7 @@ func fromRPC(err error, source string) error {
 	}
 	// Build the default result, we will refine it as we proceed.
 	result := &Error{
-		ConnectCode: connect.CodeUnknown,
+		Code:        connect.CodeUnknown,
 		StatelyCode: "Unknown",
 		attrs: map[string]string{
 			"Source": source,
@@ -94,15 +94,15 @@ func fromRPC(err error, source string) error {
 	var ce *connect.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
-		result.ConnectCode = connect.CodeDeadlineExceeded
+		result.Code = connect.CodeDeadlineExceeded
 		result.CauseErr = context.DeadlineExceeded
 		result.StatelyCode = "Context"
 	case errors.Is(err, context.Canceled):
-		result.ConnectCode = connect.CodeCanceled
+		result.Code = connect.CodeCanceled
 		result.CauseErr = context.Canceled
 		result.StatelyCode = "Context"
 	case errors.As(err, &ce):
-		result.ConnectCode = ce.Code()
+		result.Code = ce.Code()
 		if detail := extractStatelyDetails(ce); detail != nil {
 			result.StatelyCode = StatelyErrorCode(detail.StatelyCode)
 			result.Message = detail.Message

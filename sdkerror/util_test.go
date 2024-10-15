@@ -11,7 +11,7 @@ import (
 
 func TestIs(t *testing.T) {
 	err := &sdkerror.Error{
-		ConnectCode: connect.CodeInvalidArgument,
+		Code:        connect.CodeInvalidArgument,
 		StatelyCode: "IllegalFieldImpersonation",
 		Message:     "don't impersonate fields",
 	}

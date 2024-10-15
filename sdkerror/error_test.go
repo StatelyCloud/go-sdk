@@ -13,7 +13,7 @@ import (
 func TestError_Error(t *testing.T) {
 	t.Run("error with message", func(t *testing.T) {
 		err := &sdkerror.Error{
-			ConnectCode: connect.CodeInternal,
+			Code:        connect.CodeInternal,
 			StatelyCode: "EnthalpyLimitExceeded",
 			Message:     "just a message",
 		}
@@ -22,7 +22,7 @@ func TestError_Error(t *testing.T) {
 
 	t.Run("error with attribute and message", func(t *testing.T) {
 		err := &sdkerror.Error{
-			ConnectCode: connect.CodeInternal,
+			Code:        connect.CodeInternal,
 			StatelyCode: "EnthalpyLimitExceeded",
 			Message:     "just a message",
 		}
@@ -32,7 +32,7 @@ func TestError_Error(t *testing.T) {
 
 	t.Run("error with attribute and message and cause", func(t *testing.T) {
 		err := &sdkerror.Error{
-			ConnectCode: connect.CodeInternal,
+			Code:        connect.CodeInternal,
 			StatelyCode: "EnthalpyLimitExceeded",
 			Message:     "just a message",
 			CauseErr:    errors.New("some cause"),

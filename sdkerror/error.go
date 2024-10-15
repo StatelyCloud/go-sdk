@@ -13,8 +13,8 @@ import (
 
 // Error is the error struct that all SDK code vends.
 type Error struct {
-	// ConnectCode is the top-level RPC code for this error.
-	ConnectCode connect.Code
+	// Code is the top-level ConnectRPC/gRPC code for this error.
+	Code connect.Code
 
 	// The StatelyCode property is the specific error code
 	// For more information about a specific code read:
@@ -41,7 +41,7 @@ func (e *Error) AddAttr(key, value string) {
 
 // ConnectError converts this to a Connect Error.
 func (e *Error) ConnectError() *connect.Error {
-	ce := connect.NewError(e.ConnectCode, errors.New(e.baseMessage()))
+	ce := connect.NewError(e.Code, errors.New(e.baseMessage()))
 	wireDetail := &pberrors.StatelyErrorDetails{
 		StatelyCode:   string(e.StatelyCode),
 		Message:       e.Message,
@@ -51,7 +51,7 @@ func (e *Error) ConnectError() *connect.Error {
 	detail, err := connect.NewErrorDetail(wireDetail)
 	if err != nil {
 		// Not much we can do, we'll just send the whole thing over:
-		return connect.NewError(e.ConnectCode, e)
+		return connect.NewError(e.Code, e)
 	}
 
 	ce.AddDetail(detail)
@@ -129,7 +129,7 @@ func (e *Error) As(target any) bool {
 // builds a formatted message of the form:
 // (Code/StatelyCode).
 func (e *Error) baseMessage() string {
-	return "(" + strcase.ToCamel(e.ConnectCode.String()) + "/" + string(e.StatelyCode) + ")"
+	return "(" + strcase.ToCamel(e.Code.String()) + "/" + string(e.StatelyCode) + ")"
 }
 
 func strerr(err error) string {
