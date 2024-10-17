@@ -27,7 +27,7 @@ type ListOptions struct {
 	Limit uint32
 	// SortableProperty is the property to sort by. Default is SortByKeyPath.
 	SortableProperty SortableProperty
-	// SortDirection is the direction to sort by. Default is Forward.
+	// SortDirection is the direction to sort by. Default is Ascending.
 	SortDirection SortDirection
 }
 
@@ -48,7 +48,7 @@ func (lo *ListOptions) Merge(other *ListOptions) *ListOptions {
 
 // ContinueOptions are optional parameters for Continue.
 type ContinueOptions struct {
-	// SortDirection is the direction to sort by. Default is Forward.
+	// SortDirection is the direction to sort by. Default is Ascending.
 	SortDirection SortDirection
 }
 
@@ -66,10 +66,10 @@ const (
 type SortDirection int32
 
 const (
-	// Forward is the default sort direction.
-	Forward SortDirection = iota
-	// Backward is the reverse sort direction.
-	Backward
+	// Ascending is the default sort direction.
+	Ascending SortDirection = iota
+	// Descending is the reverse sort direction.
+	Descending
 )
 
 // ListToken is a stateless token that acts like an iterator on a list of
@@ -169,7 +169,7 @@ func (li *listIterator) Value() Item {
 }
 
 // ContinueList picks back up where this token left off. If there are no more
-// results, `nil` will be returned. The default sort direction is Forward if
+// results, `nil` will be returned. The default sort direction is Ascending if
 // you do not specify ContinueOptions.
 func (c *client) ContinueList(ctx context.Context, token []byte) (ListResponse[Item], error) {
 	if token == nil {
