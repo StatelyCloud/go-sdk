@@ -24,8 +24,10 @@ type Deleted struct {
 	KeyPath string
 }
 
-// UpdateOutsideOfWindow is a SyncResponse that indicates that the item was
-// updated outside the window.
+// UpdateOutsideOfWindow is a SyncResponse containing items that were updated
+// but Stately cannot tell if they were in the sync window. Treat these as
+// deleted in most cases. For more information see:
+// https://docs.stately.cloud/api/sync
 type UpdateOutsideOfWindow struct {
 	KeyPath string
 }
