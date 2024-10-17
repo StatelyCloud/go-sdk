@@ -27,6 +27,7 @@ func (m *CreateProjectRequest) CloneVT() *CreateProjectRequest {
 	r.OrganizationId = m.OrganizationId
 	r.Name = m.Name
 	r.Description = m.Description
+	r.CreateSchema = m.CreateSchema
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -68,6 +69,9 @@ func (this *CreateProjectRequest) EqualVT(that *CreateProjectRequest) bool {
 		return false
 	}
 	if this.Description != that.Description {
+		return false
+	}
+	if this.CreateSchema != that.CreateSchema {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -128,6 +132,16 @@ func (m *CreateProjectRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.CreateSchema {
+		i--
+		if m.CreateSchema {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
 	}
 	if len(m.Description) > 0 {
 		i -= len(m.Description)
@@ -205,6 +219,9 @@ func (m *CreateProjectRequest) SizeVT() (n int) {
 	l = len(m.Description)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.CreateSchema {
+		n += 2
 	}
 	n += len(m.unknownFields)
 	return n
@@ -335,6 +352,26 @@ func (m *CreateProjectRequest) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Description = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateSchema", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateSchema = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
