@@ -4,7 +4,7 @@ package sdkerror
 // StatelyErrorCode is a granular error code returned by Stately services.
 // This file provides a subset of codes that should be handled in application code.
 // For more detailed descriptions of error codes not included here see:
-// https://docs.stately.cloud/reference/error_codes .
+// https://docs.stately.cloud/api/error-codes.
 type StatelyErrorCode string
 
 const (

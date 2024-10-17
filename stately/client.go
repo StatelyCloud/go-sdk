@@ -2,7 +2,6 @@ package stately
 
 import (
 	"context"
-	"errors"
 
 	"connectrpc.com/connect"
 	"github.com/planetscale/vtprotobuf/codec/grpc"
@@ -174,20 +173,31 @@ type Transaction interface {
 // handler and we'll take care of cleaning up the transaction.
 type TransactionHandler func(Transaction) error
 
-// NewClient creates a new client with the given store and options.
+// NewClient creates a new client with the given store + schema version with options.
 // If your store is regional, you can pass in the region to use.
 // Example:
 //
-//	client, err := stately.NewClient(ctx, 1234, itemTypeMapper, stately.Option{Region: "us-east-1"})
+//	client, err := stately.NewClient(ctx, 1234, itemTypeMapper, version, stately.Option{Region: "us-east-1"})
 func NewClient(
 	appCtx context.Context,
 	storeID uint64,
-	// TODO we will introduce schemaVersionID here but for now we will always default to 0, which should be latest
+	schemaVersionID uint32,
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
 ) (Client, error) {
 	if itemTypeMapper == nil {
-		return nil, errors.New("itemTypeMapper is required when creating a client")
+		return nil, &sdkerror.Error{
+			Code:        connect.CodeInvalidArgument,
+			StatelyCode: "InvalidArgument",
+			Message:     "ItemTypeMapper is required when creating a client",
+		}
+	}
+	if schemaVersionID == 0 {
+		return nil, &sdkerror.Error{
+			Code:        connect.CodeInvalidArgument,
+			StatelyCode: "InvalidArgument",
+			Message:     "SchemaVersionID is required when creating a client",
+		}
 	}
 	opts := &Options{}
 	for _, o := range options {
@@ -205,8 +215,9 @@ func NewClient(
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
 		),
-		storeID:    StoreID(storeID),
-		itemMapper: itemTypeMapper,
+		storeID:         StoreID(storeID),
+		itemMapper:      itemTypeMapper,
+		schemaVersionID: SchemaVersionID(schemaVersionID),
 	}, nil
 }
 

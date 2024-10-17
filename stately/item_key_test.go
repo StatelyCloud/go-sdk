@@ -1,13 +1,17 @@
-package stately
+package stately_test
 
 import (
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/StatelyCloud/go-sdk/stately"
 )
 
 func TestToKeyID(t *testing.T) {
+	type UUID [16]byte
+	id := UUID{5, 4, 2, 1, 3, 4, 7, 3, 1, 2, 3, 4, 6, 1, 3, 5}
+
 	type testCase struct {
 		name     string
 		given    string
@@ -15,18 +19,8 @@ func TestToKeyID(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			name:     "UUID",
-			given:    ToKeyID(uuid.MustParse("00000000-0000-0000-0000-000000000005")),
-			expected: "AAAAAAAAAAAAAAAAAAAABQ",
-		},
-		{
-			name:     "String",
-			given:    ToKeyID("string"),
-			expected: "string",
-		},
-		{
 			name: "ByteSlice16",
-			given: ToKeyID([16]byte{
+			given: stately.ToKeyID([16]byte{
 				0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00,
@@ -35,14 +29,39 @@ func TestToKeyID(t *testing.T) {
 			expected: "AAAAAAAAAAAAAAAAAAAAUA",
 		},
 		{
+			name:     "typed uuid",
+			given:    stately.ToKeyID([16]byte(id)),
+			expected: "BQQCAQMEBwMBAgMEBgEDBQ",
+		},
+		{
+			name:     "String",
+			given:    stately.ToKeyID("string"),
+			expected: "string",
+		},
+		{
 			name:     "ByteSlice",
-			given:    ToKeyID([]byte{0x00, 0x01, 0x02, 0x03}),
+			given:    stately.ToKeyID([]byte{0x00, 0x01, 0x02, 0x03}),
 			expected: "AAECAw",
 		},
 		{
 			name:     "Uint64",
-			given:    ToKeyID(uint64(1234)),
+			given:    stately.ToKeyID(uint64(1234)),
 			expected: "1234",
+		},
+		{
+			name:     "Uint32",
+			given:    stately.ToKeyID(uint32(1234)),
+			expected: "1234",
+		},
+		{
+			name:     "int64",
+			given:    stately.ToKeyID(int64(-1234)),
+			expected: "-1234",
+		},
+		{
+			name:     "int32",
+			given:    stately.ToKeyID(int32(-1234)),
+			expected: "-1234",
 		},
 	}
 
