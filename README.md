@@ -1,4 +1,5 @@
 # StatelyDB SDK for Go
+[![Go Reference](https://pkg.go.dev/badge/github.com/StatelyCloud/go-sdk.svg)](https://pkg.go.dev/github.com/StatelyCloud/go-sdk)
 
 This is the Go SDK for [StatelyDB](https://stately.cloud).
 
@@ -76,5 +77,5 @@ func PutMyItem(ctx context.Context, client stately.Client) error {
 
 ---
 
-[Getting Started Guide]: https://preview-docs.stately.cloud/guides/getting-started/
-[Defining Schema]: https://preview-docs.stately.cloud/guides/defining-schema/
+[Getting Started Guide]: https://docs.stately.cloud/guides/getting-started/
+[Defining Schema]: https://docs.stately.cloud/guides/schema/
