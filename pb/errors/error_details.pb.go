@@ -34,8 +34,8 @@ type StatelyErrorDetails struct {
 	unknownFields protoimpl.UnknownFields
 
 	// stately_code is the error code that was returned by the Stately API.
-	// The full list of codes is available at https://docs.stately.cloud/codes
-	// and documentation on a specific code can be found at https://docs.stately.cloud/codes#{stately_code}
+	// The full list of codes is available at https://docs.stately.cloud/api/error-codes/
+	// and documentation on a specific code can be found at https://docs.stately.cloud/api/error-codes/#{stately_code}
 	StatelyCode string `protobuf:"bytes,1,opt,name=stately_code,json=statelyCode,proto3" json:"stately_code,omitempty"`
 	// message is a human-readable error message that can be displayed to the user that
 	// provides more context about the error.
