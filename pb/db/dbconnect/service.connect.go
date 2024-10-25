@@ -93,12 +93,12 @@ type DatabaseServiceClient interface {
 	// always applied atomically; all will fail or all will succeed.
 	Delete(context.Context, *connect.Request[db.DeleteRequest]) (*connect.Response[db.DeleteResponse], error)
 	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must minimally contain a Group Key (an item type and an
-	// item ID). BeginList will return an empty result set if there are no items
-	// matching that key prefix. This API returns a token that you can pass to
-	// ContinueList to expand the result set, or to SyncList to get updates within
-	// the result set. This can fail if the caller does not have permission to
-	// read Items.
+	// key path prefix must minimally contain a Group Key (a single key segment
+	// with a namespace and an ID). BeginList will return an empty result set if
+	// there are no items matching that key prefix. This API returns a token that
+	// you can pass to ContinueList to expand the result set, or to SyncList to
+	// get updates within the result set. This can fail if the caller does not
+	// have permission to read Items.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	BeginList(context.Context, *connect.Request[db.BeginListRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
 	// ContinueList takes the token from a BeginList call and returns more results
@@ -292,12 +292,12 @@ type DatabaseServiceHandler interface {
 	// always applied atomically; all will fail or all will succeed.
 	Delete(context.Context, *connect.Request[db.DeleteRequest]) (*connect.Response[db.DeleteResponse], error)
 	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must minimally contain a Group Key (an item type and an
-	// item ID). BeginList will return an empty result set if there are no items
-	// matching that key prefix. This API returns a token that you can pass to
-	// ContinueList to expand the result set, or to SyncList to get updates within
-	// the result set. This can fail if the caller does not have permission to
-	// read Items.
+	// key path prefix must minimally contain a Group Key (a single key segment
+	// with a namespace and an ID). BeginList will return an empty result set if
+	// there are no items matching that key prefix. This API returns a token that
+	// you can pass to ContinueList to expand the result set, or to SyncList to
+	// get updates within the result set. This can fail if the caller does not
+	// have permission to read Items.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	BeginList(context.Context, *connect.Request[db.BeginListRequest], *connect.ServerStream[db.ListResponse]) error
 	// ContinueList takes the token from a BeginList call and returns more results

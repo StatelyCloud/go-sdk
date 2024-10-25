@@ -190,13 +190,13 @@ func (c *client) ContinueList(ctx context.Context, token []byte) (ListResponse[I
 	}, nil
 }
 
-// BeginList loads Items that start with a specified key path, subject to
-// additional filtering. The prefix must minimally contain a Group Key (an
-// item type and an item ID). BeginList will return an empty result set if
-// there are no items matching that key prefix. A token is returned from this
-// API that you can then pass to ContinueList to expand the result set, or to
-// SyncList to get updates within the result set. This can fail if the caller
-// does not have permission to read Items.
+// BeginList retrieves Items that start with a specified key path prefix. The
+// key path prefix must minimally contain a Group Key (a single key segment with
+// a namespace and an ID). BeginList will return an empty result set if there
+// are no items matching that key prefix. This API returns a token that you can
+// pass to ContinueList to expand the result set, or to SyncList to get updates
+// within the result set. This can fail if the caller does not have permission
+// to read Items.
 func (c *client) BeginList(
 	ctx context.Context,
 	keyPath string,

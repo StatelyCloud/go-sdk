@@ -27,6 +27,7 @@ func (m *StatelyErrorDetails) CloneVT() *StatelyErrorDetails {
 	r.StatelyCode = m.StatelyCode
 	r.Message = m.Message
 	r.UpstreamCause = m.UpstreamCause
+	r.Code = m.Code
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -51,6 +52,9 @@ func (this *StatelyErrorDetails) EqualVT(that *StatelyErrorDetails) bool {
 		return false
 	}
 	if this.UpstreamCause != that.UpstreamCause {
+		return false
+	}
+	if this.Code != that.Code {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -93,6 +97,11 @@ func (m *StatelyErrorDetails) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.Code != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.Code))
+		i--
+		dAtA[i] = 0x20
+	}
 	if len(m.UpstreamCause) > 0 {
 		i -= len(m.UpstreamCause)
 		copy(dAtA[i:], m.UpstreamCause)
@@ -134,6 +143,9 @@ func (m *StatelyErrorDetails) SizeVT() (n int) {
 	l = len(m.UpstreamCause)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.Code != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.Code))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -264,6 +276,25 @@ func (m *StatelyErrorDetails) UnmarshalVT(dAtA []byte) error {
 			}
 			m.UpstreamCause = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			m.Code = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Code |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
