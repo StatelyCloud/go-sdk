@@ -197,6 +197,12 @@ type httpAuthMiddleware struct {
 	unauthenticatedMethods []string
 }
 
+// connect.PayloadCloser implements a Rewind method that allows the body to be reused.
+// https://github.com/connectrpc/connect-go/blob/74a6754f29185b85fefa2915bf8fb680a36ca8f0/duplex_http_call.go#L456
+type rewindable interface {
+	Rewind() bool
+}
+
 func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTripper) (*http.Response, error) {
 	// filter out apis that don't require auth
 	for _, path := range m.unauthenticatedMethods {
@@ -211,7 +217,11 @@ func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTrip
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 
+	// Make the original request
 	resp, err := next.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
 
 	// If the RPC failed due to auth, attempt to refresh the access token and retry once.
 	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
@@ -220,8 +230,17 @@ func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTrip
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Authorization", "Bearer "+token)
-		resp, err = next.RoundTrip(req)
+		// We need to reset the body or we'll get "request declared a Content-Length
+		// of 57 but only wrote 0 bytes" on requests with a body.
+		if rewinder, ok := req.Body.(rewindable); ok {
+			if rewinder.Rewind() {
+				// Redrive the request with the new token
+				req.Header.Set("Authorization", "Bearer "+token)
+				resp, err = next.RoundTrip(req)
+			}
+
+			// If we can't rewind the body, just return the original error. Sad.
+		}
 	}
 
 	return resp, err
