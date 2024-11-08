@@ -214,6 +214,8 @@ func NewClient(
 			opts.Endpoint,
 			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
 			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
+			// By default Connect compresses everything, which is unnecessary for small messages
+			connect.WithCompressMinBytes(1024),
 		),
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,

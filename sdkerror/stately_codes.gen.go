@@ -8,6 +8,13 @@ package sdkerror
 type StatelyErrorCode string
 
 const (
+	// CachedSchemaTooOld indicates that schema was recently updated and internal
+	// caches have not yet caught up. If this problem persists, please contact support.
+	//
+	// - Retryable
+	//     This error is immediately retryable.
+	CachedSchemaTooOld StatelyErrorCode = "CachedSchemaTooOld"
+
 	// ConcurrentModification indicates the current transaction was aborted
 	// because of a non-serializable interaction with another transaction was
 	// detected, a stale read was detected, or because attempts to resolve an

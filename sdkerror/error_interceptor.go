@@ -107,7 +107,7 @@ func fromRPC(err error, source string) error {
 			result.StatelyCode = StatelyErrorCode(detail.StatelyCode)
 			result.Message = detail.Message
 			if detail.UpstreamCause != "" {
-				result.CauseErr = errors.New("Upstream: " + detail.UpstreamCause)
+				result.CauseErr = errors.New(detail.UpstreamCause)
 			}
 		}
 	}
