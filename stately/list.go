@@ -178,7 +178,8 @@ func (c *client) ContinueList(ctx context.Context, token []byte) (ListResponse[I
 
 	// call continue list
 	response, err := c.client.ContinueList(ctx, connect.NewRequest(&db.ContinueListRequest{
-		TokenData: token,
+		TokenData:       token,
+		SchemaVersionId: uint32(c.schemaVersionID),
 	}))
 	if err != nil {
 		return nil, err

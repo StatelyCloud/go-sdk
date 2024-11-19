@@ -33,22 +33,22 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceGetAccessTokenProcedure is the fully-qualified name of the AuthService's
-	// GetAccessToken RPC.
-	AuthServiceGetAccessTokenProcedure = "/stately.auth.AuthService/GetAccessToken"
+	// AuthServiceGetAuthTokenProcedure is the fully-qualified name of the AuthService's GetAuthToken
+	// RPC.
+	AuthServiceGetAuthTokenProcedure = "/stately.auth.AuthService/GetAuthToken"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	authServiceServiceDescriptor              = auth.File_auth_service_proto.Services().ByName("AuthService")
-	authServiceGetAccessTokenMethodDescriptor = authServiceServiceDescriptor.Methods().ByName("GetAccessToken")
+	authServiceServiceDescriptor            = auth.File_auth_service_proto.Services().ByName("AuthService")
+	authServiceGetAuthTokenMethodDescriptor = authServiceServiceDescriptor.Methods().ByName("GetAuthToken")
 )
 
 // AuthServiceClient is a client for the stately.auth.AuthService service.
 type AuthServiceClient interface {
-	// GetAccessToken returns a short-lived access token from some proof of
+	// GetAuthToken returns a short-lived access token from some proof of
 	// identity. This operation will fail if the identity cannot be verified.
-	GetAccessToken(context.Context, *connect.Request[auth.GetAccessTokenRequest]) (*connect.Response[auth.GetAccessTokenResponse], error)
+	GetAuthToken(context.Context, *connect.Request[auth.GetAuthTokenRequest]) (*connect.Response[auth.GetAuthTokenResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the stately.auth.AuthService service. By default, it
@@ -61,10 +61,10 @@ type AuthServiceClient interface {
 func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AuthServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &authServiceClient{
-		getAccessToken: connect.NewClient[auth.GetAccessTokenRequest, auth.GetAccessTokenResponse](
+		getAuthToken: connect.NewClient[auth.GetAuthTokenRequest, auth.GetAuthTokenResponse](
 			httpClient,
-			baseURL+AuthServiceGetAccessTokenProcedure,
-			connect.WithSchema(authServiceGetAccessTokenMethodDescriptor),
+			baseURL+AuthServiceGetAuthTokenProcedure,
+			connect.WithSchema(authServiceGetAuthTokenMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
@@ -73,19 +73,19 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	getAccessToken *connect.Client[auth.GetAccessTokenRequest, auth.GetAccessTokenResponse]
+	getAuthToken *connect.Client[auth.GetAuthTokenRequest, auth.GetAuthTokenResponse]
 }
 
-// GetAccessToken calls stately.auth.AuthService.GetAccessToken.
-func (c *authServiceClient) GetAccessToken(ctx context.Context, req *connect.Request[auth.GetAccessTokenRequest]) (*connect.Response[auth.GetAccessTokenResponse], error) {
-	return c.getAccessToken.CallUnary(ctx, req)
+// GetAuthToken calls stately.auth.AuthService.GetAuthToken.
+func (c *authServiceClient) GetAuthToken(ctx context.Context, req *connect.Request[auth.GetAuthTokenRequest]) (*connect.Response[auth.GetAuthTokenResponse], error) {
+	return c.getAuthToken.CallUnary(ctx, req)
 }
 
 // AuthServiceHandler is an implementation of the stately.auth.AuthService service.
 type AuthServiceHandler interface {
-	// GetAccessToken returns a short-lived access token from some proof of
+	// GetAuthToken returns a short-lived access token from some proof of
 	// identity. This operation will fail if the identity cannot be verified.
-	GetAccessToken(context.Context, *connect.Request[auth.GetAccessTokenRequest]) (*connect.Response[auth.GetAccessTokenResponse], error)
+	GetAuthToken(context.Context, *connect.Request[auth.GetAuthTokenRequest]) (*connect.Response[auth.GetAuthTokenResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -94,17 +94,17 @@ type AuthServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	authServiceGetAccessTokenHandler := connect.NewUnaryHandler(
-		AuthServiceGetAccessTokenProcedure,
-		svc.GetAccessToken,
-		connect.WithSchema(authServiceGetAccessTokenMethodDescriptor),
+	authServiceGetAuthTokenHandler := connect.NewUnaryHandler(
+		AuthServiceGetAuthTokenProcedure,
+		svc.GetAuthToken,
+		connect.WithSchema(authServiceGetAuthTokenMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/stately.auth.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceGetAccessTokenProcedure:
-			authServiceGetAccessTokenHandler.ServeHTTP(w, r)
+		case AuthServiceGetAuthTokenProcedure:
+			authServiceGetAuthTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -114,6 +114,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) GetAccessToken(context.Context, *connect.Request[auth.GetAccessTokenRequest]) (*connect.Response[auth.GetAccessTokenResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.auth.AuthService.GetAccessToken is not implemented"))
+func (UnimplementedAuthServiceHandler) GetAuthToken(context.Context, *connect.Request[auth.GetAuthTokenRequest]) (*connect.Response[auth.GetAuthTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.auth.AuthService.GetAuthToken is not implemented"))
 }
