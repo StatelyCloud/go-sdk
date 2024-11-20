@@ -84,6 +84,13 @@ type ListToken struct {
 	// get updated items. This is determined by the type of store you're listing
 	// from.
 	CanSync bool
+
+	// SchemaVersionID is the schema version ID of the store that produced this token.
+	// When making ContinueList calls, ensure your client version uses tokens that
+	// match this field. Using tokens with different schema versions will result
+	// in a SchemaVersionMismatch error. For SyncList calls, you only need to
+	// ensure you handle Reset responses correctly.
+	SchemaVersionID SchemaVersionID
 }
 
 // newToken creates a new ListToken from a proto token and a store.
@@ -93,9 +100,10 @@ func newToken(token *db.ListToken) *ListToken {
 		return nil
 	}
 	return &ListToken{
-		Data:        token.GetTokenData(),
-		CanContinue: token.GetCanContinue(),
-		CanSync:     token.GetCanSync(),
+		Data:            token.GetTokenData(),
+		CanContinue:     token.GetCanContinue(),
+		CanSync:         token.GetCanSync(),
+		SchemaVersionID: SchemaVersionID(token.GetSchemaVersionId()),
 	}
 }
 

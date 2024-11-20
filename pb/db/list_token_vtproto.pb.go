@@ -26,6 +26,7 @@ func (m *ListToken) CloneVT() *ListToken {
 	r := new(ListToken)
 	r.CanContinue = m.CanContinue
 	r.CanSync = m.CanSync
+	r.SchemaVersionId = m.SchemaVersionId
 	if rhs := m.TokenData; rhs != nil {
 		tmpBytes := make([]byte, len(rhs))
 		copy(tmpBytes, rhs)
@@ -55,6 +56,9 @@ func (this *ListToken) EqualVT(that *ListToken) bool {
 		return false
 	}
 	if this.CanSync != that.CanSync {
+		return false
+	}
+	if this.SchemaVersionId != that.SchemaVersionId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -96,6 +100,11 @@ func (m *ListToken) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaVersionId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.CanSync {
 		i--
@@ -142,6 +151,9 @@ func (m *ListToken) SizeVT() (n int) {
 	}
 	if m.CanSync {
 		n += 2
+	}
+	if m.SchemaVersionId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -250,6 +262,25 @@ func (m *ListToken) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.CanSync = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaVersionId", wireType)
+			}
+			m.SchemaVersionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaVersionId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
