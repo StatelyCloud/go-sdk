@@ -8,7 +8,6 @@ import (
 	"github.com/StatelyCloud/go-sdk/pb/db"
 )
 
-// Get retrieves an item from the store.
 func (t *transaction) Get(item string) (Item, error) {
 	items, err := t.GetBatch(item)
 	if err != nil {
@@ -20,7 +19,6 @@ func (t *transaction) Get(item string) (Item, error) {
 	return items[0], nil
 }
 
-// GetBatch retrieves up to 100 items from the store.
 func (t *transaction) GetBatch(itemKeys ...string) ([]Item, error) {
 	req := t.newTXNReq(&db.TransactionRequest_GetItems{
 		GetItems: &db.TransactionGet{Gets: mapToItemKey(itemKeys)},
@@ -47,8 +45,6 @@ func (t *transaction) GetBatch(itemKeys ...string) ([]Item, error) {
 	return results, nil
 }
 
-// Put is a convenience method for adding a single Item to the Store, or
-// replacing the RawItem if it exists at that path.
 func (t *transaction) Put(item Item) (GeneratedID, error) {
 	items, err := t.PutBatch(item)
 	if err != nil || len(items) == 0 {
@@ -57,9 +53,8 @@ func (t *transaction) Put(item Item) (GeneratedID, error) {
 	return items[0], nil
 }
 
-// PutBatch schedules up to 50 items to be written with new keys on commit.
-func (t *transaction) PutBatch(items ...Item) ([]GeneratedID, error) {
-	putItems, err := mapPutRequest(items)
+func (t *transaction) PutBatch(batch ...Item) ([]GeneratedID, error) {
+	inputItems, putItems, err := mapPutRequestWithOptions(batch)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +72,8 @@ func (t *transaction) PutBatch(items ...Item) ([]GeneratedID, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.putRequests = append(t.putRequests, items...)
+
+	t.putRequests = append(t.putRequests, inputItems...)
 
 	// map the results back
 	generatedIDs := make([]GeneratedID, len(res.GeneratedIds))
@@ -100,7 +96,6 @@ func (t *transaction) PutBatch(items ...Item) ([]GeneratedID, error) {
 	return generatedIDs, nil
 }
 
-// Delete schedules up to 50 items to be deleted on commit.
 func (t *transaction) Delete(itemKeys ...string) error {
 	err := t.safeSend(t.newTXNReq(&db.TransactionRequest_DeleteItems{
 		DeleteItems: &db.TransactionDelete{Deletes: mapDeleteRequest(itemKeys)},
@@ -112,7 +107,6 @@ func (t *transaction) Delete(itemKeys ...string) error {
 	return nil
 }
 
-// BeginList is like a query only we call it 'List'.
 func (t *transaction) BeginList(prefix string, options ...ListOptions) (ListResponse[Item], error) {
 	opts := ListOptions{}
 	for _, opt := range options {

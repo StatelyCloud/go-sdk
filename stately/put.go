@@ -2,17 +2,28 @@ package stately
 
 import (
 	"context"
+	"strconv"
 
 	"connectrpc.com/connect"
 
 	"github.com/StatelyCloud/go-sdk/pb/db"
+	"github.com/StatelyCloud/go-sdk/sdkerror"
 )
 
-// Put adds one Item to the Store, or replaces the Item if it
-// already exists at that path.
-//
-// This will fail if:
-//   - The caller does not have permission to create Items.
+// WithPutOptions wraps an item and adds options for use when putting the item.
+// This may be used in place of an Item in Put or PutBatch.
+type WithPutOptions struct {
+	Item
+	// MustNotExist is a condition that indicates this item must not already exist
+	// at any of its key paths. If there is already an item at one of those paths,
+	// the Put operation will fail with a ConditionalCheckFailed error. Note that
+	// if the item has an `initialValue` field in its key, that initial value will
+	// automatically be chosen not to conflict with existing items, so this
+	// condition only applies to key paths that do not contain the `initialValue`
+	// field.
+	MustNotExist bool
+}
+
 func (c *client) Put(ctx context.Context, item Item) (Item, error) {
 	responses, err := c.PutBatch(ctx, item)
 	if err != nil {
@@ -21,17 +32,8 @@ func (c *client) Put(ctx context.Context, item Item) (Item, error) {
 	return responses[0], nil
 }
 
-// PutBatch adds up to 50 Items to the Store, or replaces the Items if they
-// already exist at that path.
-//
-// This will fail if
-//   - the caller does not have permission to create Items.
-//
-// Additional Notes:
-// All puts in the request are applied atomically - there are no partial
-// successes.
 func (c *client) PutBatch(ctx context.Context, batch ...Item) ([]Item, error) {
-	putItems, err := mapPutRequest(batch)
+	items, putItems, err := mapPutRequestWithOptions(batch)
 	if err != nil {
 		return nil, err
 	}
@@ -45,26 +47,47 @@ func (c *client) PutBatch(ctx context.Context, batch ...Item) ([]Item, error) {
 		return nil, err
 	}
 
-	return batch, mapPutResponses(resp.Msg.GetItems(), batch)
+	return items, mapPutResponses(resp.Msg.GetItems(), items)
 }
 
+// mapPutRequestWithOptions maps a list of items or WithOptions to a list of
+// Items and a list of PutItem inputs.
 // Shared between transactional and non-transactional put.
-func mapPutRequest(batchRequest []Item) ([]*db.PutItem, error) {
-	// Build the put items
-	putItems := make([]*db.PutItem, len(batchRequest))
-	for i, v := range batchRequest {
-
-		item, err := v.MarshalStately()
-		if err != nil {
-			return nil, err
+func mapPutRequestWithOptions(itemsOrOptions []Item) (items []Item, putItems []*db.PutItem, err error) {
+	items = make([]Item, len(itemsOrOptions))
+	putItems = make([]*db.PutItem, len(itemsOrOptions))
+	for i, v := range itemsOrOptions {
+		var withOptions WithPutOptions
+		if po, ok := v.(WithPutOptions); ok {
+			withOptions = po
+		} else {
+			withOptions = WithPutOptions{
+				Item: v,
+			}
 		}
+		if withOptions.Item == nil {
+			return nil, nil, &sdkerror.Error{
+				Code:        connect.CodeInvalidArgument,
+				StatelyCode: "ItemIsRequired",
+				Message:     "items[" + strconv.Itoa(i) + "] is nil",
+			}
+		}
+		item, err := withOptions.Item.MarshalStately()
+		if err != nil {
+			return nil, nil, err
+		}
+		items[i] = withOptions.Item
 		putItems[i] = &db.PutItem{
-			Item: item,
+			Item:         item,
+			MustNotExist: withOptions.MustNotExist,
 		}
 	}
-	return putItems, nil
+	return items, putItems, err
 }
 
+// Replace the list of items in place with the results of the put operation.
+// This is needed because UnmarshalStately needs an item of the correct type to
+// unmarshal into.
 // shared between transactional and non-transactional put.
 func mapPutResponses(results []*db.Item, original []Item) error {
 	if results == nil {

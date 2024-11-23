@@ -129,6 +129,7 @@ func (e *Error) As(target any) bool {
 // builds a formatted message of the form:
 // (Code/StatelyCode).
 func (e *Error) baseMessage() string {
+	// TODO: Collapse 'em
 	return "(" + strcase.ToCamel(e.Code.String()) + "/" + string(e.StatelyCode) + ")"
 }
 

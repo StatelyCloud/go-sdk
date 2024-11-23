@@ -11,19 +11,19 @@ import (
 
 // ListRequest starts a list operation.
 type ListRequest struct {
-	// KeyPathPrefix must be at least the root component but optionally contain
-	// any number of path components to narrow your list result.
-	// Example: [/state-washington]/city - the first segment is the root
-	// component, this would return all cities in washington. Separately, you
-	// could issue a list request with just `/state-washington` which would
-	// return the item at "/state-washington"
+	// KeyPathPrefix must contain at least a full group key but can optionally
+	// contain any number of path components to narrow your list result. Example:
+	// [/state-washington]/city - the first segment is the group key, and this
+	// would return all cities in washington. Separately, you could issue a list
+	// request with just `/state-washington` which would also return the item at
+	// "/state-washington"
 	KeyPathPrefix string
 }
 
 // ListOptions are optional parameters for List.
 type ListOptions struct {
-	// Limit is the maximum number of items to return. If 0, the server will
-	// default to unlimited.
+	// Limit is the maximum number of items to return. The default is unlimited -
+	// all items will be returned.
 	Limit uint32
 	// SortableProperty is the property to sort by. Default is SortByKeyPath.
 	SortableProperty SortableProperty
@@ -72,17 +72,18 @@ const (
 	Descending
 )
 
-// ListToken is a stateless token that acts like an iterator on a list of
-// results efficiently fetching the next window. To fetch additional results,
-// use the "next" token produced by Continue.
+// ListToken is a stateless token that saves your place in a result set,
+// allowing you to fetch additional results with ContinueList, or get updated
+// results with SyncList.
 type ListToken struct {
-	// Data will never be nil
+	// Data will never be nil. This is the token data that you pass to
+	// ContinueList or SyncList.
 	Data []byte
-	// CanContinue indicates if there are more results to fetch using ContinueList
+	// CanContinue indicates if there are more results to fetch using
+	// ContinueList.
 	CanContinue bool
-	// CanSync indicates that you could call SyncList with this token later to
-	// get updated items. This is determined by the type of store you're listing
-	// from.
+	// CanSync indicates that you could call SyncList with this token later to get
+	// updated items. This is determined by the type of store you're listing from.
 	CanSync bool
 
 	// SchemaVersionID is the schema version ID of the store that produced this token.
@@ -176,9 +177,6 @@ func (li *listIterator) Value() Item {
 	return li.currItem
 }
 
-// ContinueList picks back up where this token left off. If there are no more
-// results, `nil` will be returned. The default sort direction is Ascending if
-// you do not specify ContinueOptions.
 func (c *client) ContinueList(ctx context.Context, token []byte) (ListResponse[Item], error) {
 	if token == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("token is nil"))
@@ -199,13 +197,6 @@ func (c *client) ContinueList(ctx context.Context, token []byte) (ListResponse[I
 	}, nil
 }
 
-// BeginList retrieves Items that start with a specified key path prefix. The
-// key path prefix must minimally contain a Group Key (a single key segment with
-// a namespace and an ID). BeginList will return an empty result set if there
-// are no items matching that key prefix. This API returns a token that you can
-// pass to ContinueList to expand the result set, or to SyncList to get updates
-// within the result set. This can fail if the caller does not have permission
-// to read Items.
 func (c *client) BeginList(
 	ctx context.Context,
 	keyPath string,

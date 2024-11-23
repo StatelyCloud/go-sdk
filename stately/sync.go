@@ -47,25 +47,6 @@ func (r *UpdateOutsideOfWindow) IsSyncResponse() {}
 // IsSyncResponse is a marker method to indicate that a type is a SyncResponse.
 func (r *Reset) IsSyncResponse() {}
 
-// SyncList returns an iterator for a sync operation.
-// You should use the iterator to get the results of the sync operation.
-// For example:
-//
-//	iter, err := store.SyncList(ctx, token)
-//	for iter.Continue() {
-//	  switch v := iter.Next().(type) {
-//	  case *stately.Changed:
-//	    // do something with the changed item: v.Item
-//	  case *stately.Deleted:
-//	    // do something with removed key path: v.KeyPath
-//	  case *stately.UpdateOutsideOfWindow:
-//	    // do something with the out of window update: v.KeyPath
-//	  case *stately.Reset:
-//	    // reset the sync operation
-//	  }
-//	}
-//	err, token := iter.Token()
-//	// handle error and token
 func (c *client) SyncList(ctx context.Context, token []byte) (ListResponse[SyncResponse], error) {
 	resp, err := c.client.SyncList(ctx, connect.NewRequest(&db.SyncListRequest{
 		TokenData: token,

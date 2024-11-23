@@ -88,7 +88,7 @@ type DatabaseServiceClient interface {
 	Get(context.Context, *connect.Request[db.GetRequest]) (*connect.Response[db.GetResponse], error)
 	// Delete removes one or more Items from the Store by their key paths. This
 	// will fail if the caller does not have permission to delete Items.
-	// Tombstones will be saved for deleted items for  time, so
+	// Tombstones will be saved for deleted items for some time, so
 	// that SyncList can return information about deleted items. Deletes are
 	// always applied atomically; all will fail or all will succeed.
 	Delete(context.Context, *connect.Request[db.DeleteRequest]) (*connect.Response[db.DeleteResponse], error)
@@ -287,7 +287,7 @@ type DatabaseServiceHandler interface {
 	Get(context.Context, *connect.Request[db.GetRequest]) (*connect.Response[db.GetResponse], error)
 	// Delete removes one or more Items from the Store by their key paths. This
 	// will fail if the caller does not have permission to delete Items.
-	// Tombstones will be saved for deleted items for  time, so
+	// Tombstones will be saved for deleted items for some time, so
 	// that SyncList can return information about deleted items. Deletes are
 	// always applied atomically; all will fail or all will succeed.
 	Delete(context.Context, *connect.Request[db.DeleteRequest]) (*connect.Response[db.DeleteResponse], error)
