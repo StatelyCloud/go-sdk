@@ -65,22 +65,13 @@ type Options struct {
 	JSONResponseFormat bool
 }
 
-// AuthTokenProvider is the interface which the client uses to authenticate
-// outgoing requests. The client will be wired with a default implementation
-// that is suitable for most use cases. This is a thread-safe interface.
-type AuthTokenProvider interface {
-	// GetAccessToken returns an access token or an error. If there is no current
-	// access token then the provider will block and attempt to refresh and get a
-	// new access token. An error is returned if there is no access token and the
-	// refresh operation fails.
-	GetAccessToken(ctx context.Context) (string, error)
-
-	// InvalidateAccessToken marks the current token, if any, as invalid. This
-	// should be called if the service responds with a status that indicates the
-	// token is no longer valid. This should cause the next call to GetAccessToken
-	// to fetch a fresh token.
-	InvalidateAccessToken()
-}
+// AuthTokenProvider is the functional interface which the client uses to
+// authenticate outgoing requests. The client will be wired with a default
+// implementation that is suitable for most use cases. This is a thread-safe
+// interface. The `force` parameter causes current token to be invalidated and a
+// new one to be synchronously fetched. This will block other incoming requests
+// until the new token is fetched.
+type AuthTokenProvider func(ctx context.Context, force bool) (string, error)
 
 // ItemTypeMapper is a function that maps a db.Item to your SDK generated types.
 // We will generate this type mapper when using Stately's code generation to
@@ -119,7 +110,7 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 		if clientSecret == "" {
 			return nil, fmt.Errorf("unable to read client secret from %s env var", clientSecretEnvVar)
 		}
-		o.AuthTokenProvider = auth.NewAuthTokenProvider(appCtx, clientID, clientSecret, nil)
+		o.AuthTokenProvider = auth.InitServerAuth(appCtx, clientID, clientSecret, nil)
 	}
 	return o, nil
 }
@@ -191,7 +182,7 @@ func (o *Options) HTTPClient() *http.Client {
 }
 
 type httpAuthMiddleware struct {
-	tokenProvider AuthTokenProvider
+	getToken AuthTokenProvider
 	// unauthenticatedMethods do not require auth and therefore will be skipped
 	// when needing to add an auth token.
 	unauthenticatedMethods []string
@@ -211,7 +202,7 @@ func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTrip
 		}
 	}
 
-	token, err := m.tokenProvider.GetAccessToken(req.Context())
+	token, err := m.getToken(req.Context(), false /*force*/)
 	if err != nil {
 		return nil, err
 	}
@@ -223,10 +214,9 @@ func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTrip
 		return nil, err
 	}
 
-	// If the RPC failed due to auth, attempt to refresh the access token and retry once.
+	// If the RPC failed due to auth, force refresh the access token and retry once.
 	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
-		m.tokenProvider.InvalidateAccessToken()
-		token, err = m.tokenProvider.GetAccessToken(req.Context())
+		token, err = m.getToken(req.Context(), true /*force*/)
 		if err != nil {
 			return nil, err
 		}

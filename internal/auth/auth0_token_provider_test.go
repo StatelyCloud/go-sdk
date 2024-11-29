@@ -23,6 +23,7 @@ func TestGetToken(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// read the body into a map of interfaces
 		body, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -40,14 +41,10 @@ func TestGetToken(t *testing.T) {
 		assert.Equal(t, "client-secret", reqData["client_secret"])
 
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(map[string]any{"access_token": "test-token", "expires_in": 1000})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "test-token", "expires_in": 1000})
 	}))
 
-	p := auth.NewAuthTokenProvider(
+	getToken := auth.InitServerAuth(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -57,13 +54,13 @@ func TestGetToken(t *testing.T) {
 		},
 	)
 
-	token, err := p.GetAccessToken(context.TODO())
+	token, err := getToken(context.TODO(), false)
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
 
 	// now close the server and call GetToken again. it should work without a network request because the value is cached
 	svr.Close()
-	token, err = p.GetAccessToken(context.TODO())
+	token, err = getToken(context.TODO(), false)
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
 }
@@ -75,16 +72,13 @@ func TestConcurrentRefresh(t *testing.T) {
 		// make the handler take a long time so that the requests back up
 		time.Sleep(time.Millisecond * 100)
 		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).
+		_ = json.NewEncoder(w).
 			Encode(map[string]any{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
 		count.Add(1)
 	}))
 
-	p := auth.NewAuthTokenProvider(
+	getToken := auth.InitServerAuth(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -98,7 +92,7 @@ func TestConcurrentRefresh(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			token, err := p.GetAccessToken(context.TODO())
+			token, err := getToken(context.TODO(), false)
 			assert.NoError(t, err)
 			assert.Equal(t, "0", token)
 		}()
@@ -107,68 +101,19 @@ func TestConcurrentRefresh(t *testing.T) {
 	wg.Wait()
 }
 
-func TestGetExpiredAuth(t *testing.T) {
-	t.Parallel()
-	returnVal := atomic.Value{}
-	returnVal.Store("test-token")
-
-	// Mock out a token that expires in 1 second
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		// send a response
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).
-			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}))
-	defer svr.Close()
-
-	p := auth.NewAuthTokenProvider(
-		context.TODO(),
-		"client-id",
-		"client-secret",
-		&auth.Options{
-			Domain: svr.URL,
-		},
-	)
-
-	token, err := p.GetAccessToken(context.TODO())
-	require.NoError(t, err)
-	assert.Equal(t, "test-token", token)
-
-	// Let the token expire
-	time.Sleep(1 * time.Second)
-
-	// now update the return value and call GetAccessToken again
-	// we will trigger a blocking refresh because the current token is expired
-	returnVal.Store("test-token2")
-	// triggers the background refresh
-	token, err = p.GetAccessToken(context.TODO())
-	require.NoError(t, err)
-	// We expect the new token to be returned because the old one had expired
-	assert.Equal(t, "test-token2", token)
-}
-
-// NOTE: This test has 2 sleeps in it. I can see a world where it is flaky because of that.
-// If you see this test failing in the CI then maybe just comment it out.
 func TestBackgroundRefresh(t *testing.T) {
 	t.Parallel()
-	returnVal := atomic.Value{}
-	returnVal.Store("test-token")
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).
-			Encode(map[string]any{"access_token": returnVal.Load(), "expires_in": 1})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "test-token", "expires_in": 1})
+
+		wg.Done()
 	}))
 	defer svr.Close()
 
-	p := auth.NewAuthTokenProvider(
+	getToken := auth.InitServerAuth(
 		context.TODO(),
 		"client-id",
 		"client-secret",
@@ -177,44 +122,27 @@ func TestBackgroundRefresh(t *testing.T) {
 		},
 	)
 
-	token, err := p.GetAccessToken(context.TODO())
+	token, err := getToken(context.TODO(), false)
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", token)
 
-	// now update the return value and call GetAccessToken again
-	// we will trigger a blocking refresh because the current token is expired
-	returnVal.Store("test-token2")
-	// sleep 850 millis which is guaranteed to put us in the background refresh window
-	time.Sleep(time.Millisecond * 850)
-	// triggers the background refresh
-	token, err = p.GetAccessToken(context.TODO())
-	require.NoError(t, err)
-	assert.Equal(t, "test-token", token)
-
-	// sleep another 200 millis to allow for the request to complete
-	time.Sleep(time.Millisecond * 200)
-	token, err = p.GetAccessToken(context.TODO())
-	require.NoError(t, err)
-	assert.Equal(t, "test-token2", token)
+	// we won't be able to continue past this point until the automatic refresh happens
+	wg.Wait()
 }
 
 func TestRefreshContextCancelled(t *testing.T) {
 	t.Parallel()
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).
+		_ = json.NewEncoder(w).
 			Encode(map[string]any{"access_token": "test-token", "expires_in": 0})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 	}))
 	defer svr.Close()
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	cancel()
 
-	p := auth.NewAuthTokenProvider(
+	getToken := auth.InitServerAuth(
 		ctx,
 		"client-id",
 		"client-secret",
@@ -223,37 +151,212 @@ func TestRefreshContextCancelled(t *testing.T) {
 		},
 	)
 
-	token, err := p.GetAccessToken(ctx)
+	token, err := getToken(ctx, false)
 	assert.Equal(t, "", token)
 	assert.Error(t, err)
 }
 
-// This test mimics a situation where auth0 is down and returning 500 errors.
-// The test asserts that calls to GetAccessToken() will return an error and an empty token.
-func TestNetworkError(t *testing.T) {
+// This test mimics a situation where auth0 returns a transient error
+// and the client retries the request.
+func TestTransientNetworkError(t *testing.T) {
 	t.Parallel()
+	count := atomic.Int32{}
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		defer count.Add(1)
 		time.Sleep(time.Millisecond * 100)
-		w.WriteHeader(http.StatusInternalServerError)
-		_, err := w.Write([]byte("500 - Something bad happened!"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if count.Load() == 0 {
+
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte("500 - Something bad happened!"))
+
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).
+				Encode(map[string]any{"access_token": "test-token", "expires_in": 1000})
+
 		}
 	}))
 	defer svr.Close()
 
-	p := auth.NewAuthTokenProvider(
+	getToken := auth.InitServerAuth(
+		context.TODO(),
+		"client-id",
+		"client-secret",
+		&auth.Options{
+			Domain: svr.URL,
+		},
+	)
+
+	token, err := getToken(context.TODO(), false)
+	assert.Equal(t, "test-token", token)
+	require.NoError(t, err)
+	assert.Equal(t, int32(2), count.Load())
+}
+
+// Test that we don't retry forever if there is a non-transient network error.
+func TestPermanentNetworkError(t *testing.T) {
+	t.Parallel()
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("500 - Something bad happened!"))
+	}))
+	defer svr.Close()
+
+	getToken := auth.InitServerAuth(
 		context.TODO(),
 		"client-id",
 		"client-secret",
 		&auth.Options{
 			Domain:                  svr.URL,
-			InitialRetryBackoffTime: time.Microsecond * 1,
+			InitialRetryBackoffTime: time.Millisecond * 1,
 		},
 	)
 
-	token, err := p.GetAccessToken(context.TODO())
-	assert.Equal(t, "", token)
-	assert.Error(t, err)
+	token, err := getToken(context.TODO(), false)
+	assert.Empty(t, token)
+	require.Equal(t, "Auth0 returned 500. Response body: 500 - Something bad happened!", err.Error())
+}
+
+func TestForceOverridesExpiry(t *testing.T) {
+	t.Parallel()
+	count := atomic.Uint64{}
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// set a token with huge expiry so that we can be sure it will be cached for the duration of the test
+		_ = json.NewEncoder(w).
+			Encode(map[string]any{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
+		count.Add(1)
+	}))
+
+	getToken := auth.InitServerAuth(
+		context.TODO(),
+		"client-id",
+		"client-secret",
+		&auth.Options{
+			Domain: svr.URL,
+		},
+	)
+
+	// get the token once
+	token, err := getToken(context.TODO(), false)
+	require.NoError(t, err)
+	assert.Equal(t, "0", token)
+
+	// get the token again. it should be the same
+	token, err = getToken(context.TODO(), false)
+	require.NoError(t, err)
+	assert.Equal(t, "0", token)
+
+	// now get the token with force=true. it should be different
+	token, err = getToken(context.TODO(), true)
+	require.NoError(t, err)
+	assert.Equal(t, "1", token)
+}
+
+// Test that running a getToken(force=true) call doesn't block other getToken(force=false) calls.
+func TestForceIsBlocking(t *testing.T) {
+	t.Parallel()
+	count := atomic.Uint64{}
+	delaySecs := atomic.Uint64{}
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		time.Sleep(time.Second * time.Duration(delaySecs.Load()))
+		_ = json.NewEncoder(w).
+			Encode(map[string]any{"access_token": strconv.Itoa(int(count.Load())), "expires_in": 500000})
+		count.Add(1)
+	}))
+
+	getToken := auth.InitServerAuth(
+		context.TODO(),
+		"client-id",
+		"client-secret",
+		&auth.Options{
+			Domain: svr.URL,
+		},
+	)
+
+	// get the token once so the cache is populated
+	token, err := getToken(context.TODO(), false)
+	require.NoError(t, err)
+	assert.Equal(t, "0", token)
+
+	// now set the delay to 2 seconds and get the token with force=true
+	// in the background.
+	delaySecs.Store(2)
+	go func() { _, _ = getToken(context.TODO(), true) }()
+
+	// wait for a little bit so we can be sure the goroutine is running
+	time.Sleep(time.Second * 1)
+
+	// now getting without force should block until the new token is returned
+	token, err = getToken(context.TODO(), false)
+	require.NoError(t, err)
+	assert.Equal(t, "1", token)
+}
+
+func TestNonRetryableErrorCodes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		statusCode  int
+		expectRetry bool
+	}{
+		{
+			name:        "401 - no retry",
+			statusCode:  http.StatusUnauthorized,
+			expectRetry: false,
+		},
+		{
+			name:        "403 - no retry",
+			statusCode:  http.StatusForbidden,
+			expectRetry: false,
+		},
+		{
+			name:        "404 - no retry",
+			statusCode:  http.StatusNotFound,
+			expectRetry: false,
+		},
+		{
+			name:        "429 - retry",
+			statusCode:  http.StatusTooManyRequests,
+			expectRetry: true,
+		},
+		{
+			name:        "500 - retry",
+			statusCode:  http.StatusInternalServerError,
+			expectRetry: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			count := atomic.Uint64{}
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				count.Add(1)
+				w.WriteHeader(tt.statusCode)
+				_, _ = w.Write([]byte("done"))
+			}))
+			defer svr.Close()
+
+			getToken := auth.InitServerAuth(
+				context.TODO(),
+				"client-id",
+				"client-secret",
+				&auth.Options{
+					Domain:                  svr.URL,
+					InitialRetryBackoffTime: time.Millisecond * 1,
+				},
+			)
+
+			_, err := getToken(context.TODO(), false)
+			require.Error(t, err)
+			if tt.expectRetry {
+				assert.Greater(t, count.Load(), uint64(1))
+			} else {
+				assert.Equal(t, uint64(1), count.Load())
+			}
+		})
+	}
 }

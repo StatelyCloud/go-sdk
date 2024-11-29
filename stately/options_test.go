@@ -60,7 +60,7 @@ func TestOptions_Endpoint(t *testing.T) {
 			o := &stately.Options{
 				Region:            tt.Region,
 				Endpoint:          tt.Endpoint,
-				AuthTokenProvider: &testTokenProvider{t.Name()},
+				AuthTokenProvider: func(_ context.Context, _ bool) (string, error) { return t.Name(), nil },
 			}
 			got, err := o.ApplyDefaults(context.TODO())
 			if !tt.wantErr(t, err) {
@@ -72,17 +72,4 @@ func TestOptions_Endpoint(t *testing.T) {
 			}
 		})
 	}
-}
-
-// testTokenProvider exists to satisfy the AuthTokenProvider interface.
-type testTokenProvider struct {
-	token string
-}
-
-func (t *testTokenProvider) GetAccessToken(_ context.Context) (string, error) {
-	return t.token, nil
-}
-
-func (t *testTokenProvider) InvalidateAccessToken() {
-	// This is a no-op
 }

@@ -9,8 +9,11 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"slices"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 type authRequest struct {
@@ -33,41 +36,7 @@ const (
 	defaultInitialRetryBackoffTime = 200 * time.Millisecond
 )
 
-type authBundle struct {
-	accessToken string
-	expires     time.Time
-	refreshAt   time.Time
-	err         error
-}
-
-func (a *authBundle) isExpired() bool {
-	return time.Now().After(a.expires)
-}
-
-func (a *authBundle) shouldRefresh() bool {
-	return time.Now().After(a.refreshAt)
-}
-
-func (a *authBundle) isValid() bool {
-	return a != nil && a.accessToken != "" && !a.isExpired() && a.err == nil
-}
-
-type authTokenProvider struct {
-	ctx context.Context
-
-	clientID     string
-	clientSecret string
-
-	domain                  string
-	audience                string
-	grantType               string
-	initialRetryBackoffTime time.Duration
-
-	authResult     atomic.Pointer[authBundle]
-	pendingRefresh atomic.Pointer[chan struct{}]
-}
-
-// Options is a struct of options to be passed to NewAuthTokenProvider.
+// Options is a struct of options to be passed to InitServerAuth.
 // This can be omitted to use the default options or can be passed explicitly with
 // any overrides.
 type Options struct {
@@ -109,7 +78,13 @@ func applyDefaults(options *Options) *Options {
 	return options
 }
 
-// NewAuthTokenProvider creates a new AuthTokenProvider with the given context and options.
+// getTokenState is a wrapper for the atomic state of the access token.
+type getTokenState struct {
+	accessToken   string
+	expiresAtSecs int64
+}
+
+// InitServerAuth creates a new AuthTokenProvider with the given context and options.
 // If options is set to nil then the default options will be used.
 //
 // The supplied app context will be passed when performing background operations such as refreshing
@@ -117,152 +92,119 @@ func applyDefaults(options *Options) *Options {
 //
 // By default the AuthTokenProvider will fetch the client ID and client secret from the environment variables
 // `STATELY_CLIENT_ID` and `STATELY_CLIENT_SECRET`, however these can be explicitly overridden by passing
-// credentials in the options. If no credentials are found, NewAuthTokenProvider will return an error.
+// credentials in the options. If no credentials are found, InitServerAuth will return an error.
 //
 //nolint:revive // can't use client.AuthTokenProvider here because of circular dependency
-func NewAuthTokenProvider(
+func InitServerAuth(
 	appCtx context.Context,
 	clientID, clientSecret string,
 	options *Options,
-) *authTokenProvider {
+) func(ctx context.Context, force bool) (string, error) {
 	options = applyDefaults(options)
-	return &authTokenProvider{
-		ctx:                     appCtx,
-		clientID:                clientID,
-		clientSecret:            clientSecret,
-		domain:                  options.Domain,
-		audience:                options.Audience,
-		grantType:               defaultGrantType,
-		initialRetryBackoffTime: options.InitialRetryBackoffTime,
-		authResult:              atomic.Pointer[authBundle]{},
-		pendingRefresh:          atomic.Pointer[chan struct{}]{},
-	}
-}
-
-func (p *authTokenProvider) GetAccessToken(ctx context.Context) (string, error) {
-	currentAuth := p.authResult.Load()
-
-	if currentAuth.isValid() {
-		if currentAuth.shouldRefresh() {
-			// If we're due for a refresh then trigger it in the background.
-			// err is always nil if background == true so we can throw it away.
-			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_, _ = p.refreshAccessToken(bgCtx, true)
+	var state atomic.Value
+	state.Store(getTokenState{
+		accessToken:   "",
+		expiresAtSecs: 0,
+	})
+	validAccessToken := func() (string, bool) {
+		currentState := state.Load().(getTokenState)
+		if currentState.accessToken != "" && time.Now().Unix() < currentState.expiresAtSecs {
+			return currentState.accessToken, true
 		}
-		return currentAuth.accessToken, nil
+		return "", false
 	}
 
-	// If the current auth is not valid then we need to do a blocking refresh.
-	return p.refreshAccessToken(ctx, false)
-}
+	var refreshGroup singleflight.Group
+	var refresh func(ctx context.Context) (string, error)
+	refreshImpl := func(ctx context.Context) (string, error) {
+		// refreshImpl is guaranteed to only be running once at a time
+		// so we don't need to worry about currentState being modified during
+		// execution.
 
-func (p *authTokenProvider) InvalidateAccessToken() {
-	p.authResult.Store(nil)
-}
+		currentState := state.Load().(getTokenState)
 
-// refreshAccessToken makes a request to the auth0 server to refresh the access token if one is not already
-// pending or returns the result of the pending refresh if one is already in progress.
-// If `background` is set to true then the function will return with a nil error and empty token (""), otherwise
-// it will wait for the result of the network request.
-// If `background` is false and the pending network request fails, then the calling goroutine will return the network error
-// while all other waiting goroutines will return a generic error and empty token.
-func (p *authTokenProvider) refreshAccessToken(ctx context.Context, background bool) (string, error) {
-	// Set up a channel for when we actually execute the request.
-	// It's possible that this will be unused if CompareAndSwap fails.
-	waiter := make(chan struct{})
-
-	// Try to win the "right" to refresh by swapping our channel into the
-	// pendingRefresh slot. If the swap succeeds then we are responsible for
-	// making the network request.
-	winner := p.pendingRefresh.CompareAndSwap(nil, &waiter)
-	if winner {
-		fn := func() error {
-			defer close(waiter) // signals waiters to unblock
-			defer p.pendingRefresh.Store(nil)
-			initialTokens := p.authResult.Load()
-			tokens, err := p.refreshAccessTokenReq(ctx)
-			if err == nil {
-				p.authResult.CompareAndSwap(initialTokens, tokens)
-			} else if !initialTokens.isValid() {
-				p.authResult.CompareAndSwap(initialTokens, &authBundle{err: err})
-			}
-			return err
+		// if the context has been killed then return
+		if err := appCtx.Err(); err != nil {
+			return "", err
 		}
-		if background {
-			//nolint:errcheck // run in the background, we don't care about the error
-			// since we'll return immediately.
-			go fn()
+
+		resp, err := makeAuth0Req(ctx, clientID, clientSecret, options)
+		if err != nil {
+			// if there is an error making a network request them propagate it to the caller
+			// and leave the state intact so that if the auth isn't expired it can continue to be used
+			return "", err
+		}
+
+		// read the response data
+		newExpiresInSecs := int64(resp.ExpiresInSecs)
+		newExpiresAtSecs := time.Now().Unix() + newExpiresInSecs
+		newAccessToken := resp.AccessToken
+
+		// if the new token has expiry time greater than the current token then update the state
+		if newExpiresAtSecs > currentState.expiresAtSecs {
+			state.Store(getTokenState{
+				accessToken:   newAccessToken,
+				expiresAtSecs: newExpiresAtSecs,
+			})
 		} else {
-			// run in the current goroutine
-			if err := fn(); err != nil {
-				return "", err
-			}
+			// otherwise overwrite the new values with the old ones
+			// since they will last longer
+			newExpiresAtSecs = currentState.expiresAtSecs
+			newAccessToken = currentState.accessToken
 		}
-	}
 
-	// If this is a background refresh we can return here, regardless of whether
-	// we won the right to refresh.
-	if background {
-		return "", nil
-	}
+		// schedule the next refresh using currentExpiresAtSecs
+		// if the token was not updated we still use the old expiry time
+		refreshIn := time.Until(time.Unix(newExpiresAtSecs, 0))
+		jitter := (rand.Float64() * 0.05) + 0.9
+		timer := time.NewTimer(time.Duration(float64(refreshIn) * jitter))
 
-	if !winner {
-		// If we didn't do the refresh ourselves (another goroutine did it) then we
-		// need to wait for that other goroutine to finish.
-		currentWaiter := p.pendingRefresh.Load()
-		// It's possible the other goroutine has already completed by the time we
-		// get here.
-		if currentWaiter != nil {
+		go func() {
 			select {
-			case <-*currentWaiter: // reading from a closed channel always returns immediately
-				// success
-			case <-ctx.Done():
-				// return early if the context is cancelled
-				return "", ctx.Err()
+			case <-appCtx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return
+			case <-timer.C:
+				_, _ = refresh(appCtx)
 			}
-		}
+		}()
+
+		return newAccessToken, nil
 	}
 
-	currentAuth := p.authResult.Load()
-	if !currentAuth.isValid() {
-		if currentAuth.err != nil {
-			return "", currentAuth.err
-		}
-		return "", errors.New("refresh request failed - unable to find valid token")
+	refresh = func(ctx context.Context) (string, error) {
+		res, err, _ := refreshGroup.Do("auth0", func() (any, error) {
+			return refreshImpl(ctx)
+		})
+		return res.(string), err
 	}
-	return currentAuth.accessToken, nil
+
+	getToken := func(ctx context.Context, force bool) (string, error) {
+		if force {
+			state.Store(getTokenState{
+				accessToken:   "",
+				expiresAtSecs: 0,
+			})
+		} else if token, ok := validAccessToken(); ok {
+			return token, nil
+		}
+		return refresh(ctx)
+	}
+
+	// kick off the first refresh immediately
+	go func() { _, _ = getToken(appCtx, false) }()
+	return getToken
 }
 
-// responseToErr converts a non-200 HTTP response into an error
-// by reading the text from the response. If the response is a 200
-// then the func returns nil.
-func responseToErr(resp *http.Response) error {
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	}
-
-	defer resp.Body.Close()
-	txt, reqErr := io.ReadAll(resp.Body)
-	if reqErr != nil {
-		return fmt.Errorf(
-			"Auth0 returned %d. Failed to decode response with error: %s",
-			resp.StatusCode,
-			reqErr.Error(),
-		)
-	}
-
-	return fmt.Errorf("Auth0 returned %d. Response body: %s", resp.StatusCode, txt)
-}
-
-// refreshAccessTokenReq makes the network request for a new token and returns the token,
-// along with a time when the token should be refreshed or an error if the request failed.
-func (p *authTokenProvider) refreshAccessTokenReq(ctx context.Context) (*authBundle, error) {
+// makes the auth request to auth0. This will retry internally if the request fails in a transient way.
+func makeAuth0Req(ctx context.Context, clientID, clientSecret string, options *Options) (*authResponse, error) {
 	params := &authRequest{
-		ClientID:     p.clientID,
-		ClientSecret: p.clientSecret,
-		Audience:     p.audience,
-		GrantType:    p.grantType,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Audience:     options.Audience,
+		GrantType:    defaultGrantType,
 	}
 
 	jsonParams, err := json.Marshal(params)
@@ -270,33 +212,30 @@ func (p *authTokenProvider) refreshAccessTokenReq(ctx context.Context) (*authBun
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		p.domain+"/oauth/token",
-		bytes.NewBuffer(jsonParams),
-	)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("content-type", "application/json")
-
 	var resp *http.Response
 	var reqErr error
-	for attempt := 0; attempt < 3; attempt++ {
-		resp, reqErr = http.DefaultClient.Do(req)
-		// no point in retrying if the context is cancelled
-		if errors.Is(reqErr, context.Canceled) || errors.Is(reqErr, context.DeadlineExceeded) {
-			break
+	var retryable bool
+	for attempt := 0; attempt < 10; attempt++ {
+		// need to create the req inside the loop to avoid
+		// errors caused by reading the same body twice
+		req, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			options.Domain+"/oauth/token",
+			bytes.NewBuffer(jsonParams),
+		)
+		if err != nil {
+			return nil, err
 		}
-
-		if reqErr == nil {
-			// The error may be encoded in the response status
-			reqErr = responseToErr(resp)
-		}
+		req.Header.Add("content-type", "application/json")
+		//nolint:bodyclose // we are closing the body. the linter just can't work it out
+		resp, retryable, reqErr = parseErrorResponse(http.DefaultClient.Do(req))
 
 		if reqErr != nil {
-			err := sleepWithContext(ctx, backoff(attempt, p.initialRetryBackoffTime))
+			if !retryable {
+				return nil, reqErr
+			}
+			err := sleepWithContext(ctx, backoff(attempt, options.InitialRetryBackoffTime))
 			if err != nil {
 				return nil, err
 			}
@@ -311,24 +250,59 @@ func (p *authTokenProvider) refreshAccessTokenReq(ctx context.Context) (*authBun
 	}
 
 	// decode the response
+	defer resp.Body.Close()
 	authResp := &authResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&authResp)
 	if err != nil {
 		return nil, err
 	}
+	return authResp, nil
+}
 
-	// Calculate a random multiplier between 0.3 and 0.8 to to apply to the expiry
-	// so that we refresh in the background ahead of expiration, but avoid
-	// multiple processes hammering the service at the same time.
-	jitter := (rand.Float64() * 0.5) + 0.3
-	expires := time.Now().Add(time.Second * time.Duration(authResp.ExpiresInSecs))
-	refreshAt := time.Now().Add(time.Second * time.Duration(float64(authResp.ExpiresInSecs)*jitter))
-	// return the token
-	return &authBundle{
-		accessToken: authResp.AccessToken,
-		expires:     expires,
-		refreshAt:   refreshAt,
-	}, err
+var nonRetryableErrors = []int{
+	http.StatusUnauthorized,
+	http.StatusForbidden,
+	http.StatusNotFound,
+	http.StatusMethodNotAllowed,
+	http.StatusNotAcceptable,
+	http.StatusProxyAuthRequired,
+	http.StatusBadRequest,
+}
+
+// parseErrorResponse takes the output from a http.Do() request and
+// converts a non-200 HTTP response into an error by reading the text from the response body.
+// If Do() returns an error then that error is returned direcly.
+// If the response is a 200 then the response is returned with a nil error.
+// If an error is returned then a boolean is returned to indicate if the error is retryable.
+func parseErrorResponse(resp *http.Response, err error) (*http.Response, bool, error) {
+	// if we got an error then return that error directly
+	if err != nil {
+		// don't bother retrying context errors
+		retryable := !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+		return nil, retryable, err
+	}
+
+	// if the response is a 200 then pass through the response
+	if resp.StatusCode == http.StatusOK {
+		return resp, false, nil
+	}
+
+	// after this point we know we have an error and we are reading the body here so we have to close it
+	defer resp.Body.Close()
+
+	// otherwise we actually need to read the body
+	retryable := !slices.Contains(nonRetryableErrors, resp.StatusCode)
+
+	txt, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return resp, retryable, fmt.Errorf(
+			"Auth0 returned %d. Failed to decode response with error: %s",
+			resp.StatusCode,
+			readErr.Error(),
+		)
+	}
+
+	return resp, retryable, fmt.Errorf("Auth0 returned %d. Response body: %s", resp.StatusCode, txt)
 }
 
 // backoff returns a duration to wait before retrying a request. `attempt` is
