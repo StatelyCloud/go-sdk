@@ -93,8 +93,6 @@ type getTokenState struct {
 // By default the AuthTokenProvider will fetch the client ID and client secret from the environment variables
 // `STATELY_CLIENT_ID` and `STATELY_CLIENT_SECRET`, however these can be explicitly overridden by passing
 // credentials in the options. If no credentials are found, InitServerAuth will return an error.
-//
-//nolint:revive // can't use client.AuthTokenProvider here because of circular dependency
 func InitServerAuth(
 	appCtx context.Context,
 	clientID, clientSecret string,
