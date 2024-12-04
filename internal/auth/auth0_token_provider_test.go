@@ -101,7 +101,8 @@ func TestConcurrentRefresh(t *testing.T) {
 	wg.Wait()
 }
 
-func TestBackgroundRefresh(t *testing.T) {
+// Test that the background refresh is scheduled as expected.
+func TestBackgroundRefreshScheduler(t *testing.T) {
 	t.Parallel()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -254,7 +255,7 @@ func TestForceOverridesExpiry(t *testing.T) {
 	assert.Equal(t, "1", token)
 }
 
-// Test that running a getToken(force=true) call doesn't block other getToken(force=false) calls.
+// Test that running a getToken(force=true) call blocks other getToken(force=false) calls.
 func TestForceIsBlocking(t *testing.T) {
 	t.Parallel()
 	count := atomic.Uint64{}
