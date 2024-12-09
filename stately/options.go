@@ -166,6 +166,9 @@ func (o *Options) Merge(o2 *Options) *Options {
 	if o2.JSONResponseFormat {
 		o.JSONResponseFormat = o2.JSONResponseFormat
 	}
+	if o2.AccessKey != "" {
+		o.AccessKey = o2.AccessKey
+	}
 	o.transport = nil
 	return o
 }
