@@ -12,7 +12,7 @@ func AccessKeyAuth(
 	ctx context.Context,
 	accessKey string,
 	endpoint string,
-	refreshInterval time.Duration,
+	retryBackoffTime time.Duration,
 ) AuthTokenProvider {
-	return auth.AccessKeyAuth(ctx, accessKey, endpoint, createTransport(endpoint), refreshInterval)
+	return auth.AccessKeyAuth(ctx, accessKey, endpoint, createTransport(endpoint), retryBackoffTime)
 }

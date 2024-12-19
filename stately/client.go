@@ -92,12 +92,16 @@ type Client interface {
 	Delete(ctx context.Context, itemPaths ...string) error
 
 	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must at least contain a Group Key (a single key segment with
-	// a namespace and an ID). BeginList will return an empty result set if there
-	// are no items matching that key prefix. This API returns a token that you can
-	// pass to ContinueList to expand the result set, or to SyncList to get updates
-	// within the result set. This can fail if the caller does not have permission
-	// to read Items.
+	// key path prefix must at least contain a Group Key (a single key segment
+	// with a namespace and an ID). BeginList will return an empty result set if
+	// there are no items matching that key prefix. This API returns a token that
+	// you can pass to ContinueList to expand the result set, or to SyncList to
+	// get updates within the result set. This can fail if the caller does not
+	// have permission to read Items.
+	//
+	// The options parameter is optional and can be used to limit the number of
+	// results in a page, change the sort order, etc. If you provide multiple
+	// options objects, the last one will take precedence.
 	//
 	// Example:
 	//   iter, err := client.BeginList(ctx, "/movies", stately.ListOptions{Limit: 10})
@@ -277,11 +281,15 @@ type Transaction interface {
 	Delete(itemKeys ...string) error
 
 	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must at least contain a Group Key (a single key segment with
-	// a namespace and an ID). BeginList will return an empty result set if there
-	// are no items matching that key prefix. This API returns a token that you can
-	// pass to ContinueList to expand the result set, or to SyncList to get updates
-	// within the result set.
+	// key path prefix must at least contain a Group Key (a single key segment
+	// with a namespace and an ID). BeginList will return an empty result set if
+	// there are no items matching that key prefix. This API returns a token that
+	// you can pass to ContinueList to expand the result set, or to SyncList to
+	// get updates within the result set.
+	//
+	// The options parameter is optional and can be used to limit the number of
+	// results in a page, change the sort order, etc. If you provide multiple
+	// options objects, the last one will take precedence.
 	//
 	// Example:
 	//   iter, err := txn.BeginList("/movies", stately.ListOptions{Limit: 10})

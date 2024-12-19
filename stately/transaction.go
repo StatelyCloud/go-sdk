@@ -114,9 +114,6 @@ func (t *transaction) commit() (*TransactionResults, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	return &TransactionResults{
 		PutResponse:    t.putRequests,
 		DeleteResponse: mapDeleteResponse(resp.GetDeleteResults()),

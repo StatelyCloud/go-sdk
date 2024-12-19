@@ -106,6 +106,10 @@ func fromRPC(err error, source string) error {
 		if detail := extractStatelyDetails(ce); detail != nil {
 			result.StatelyCode = StatelyErrorCode(detail.StatelyCode)
 			result.Message = detail.Message
+			rid := ce.Meta().Get("st-rid")
+			if rid != "" {
+				result.Message = result.Message + " (Request ID: " + rid + ")"
+			}
 			if detail.UpstreamCause != "" {
 				result.CauseErr = errors.New(detail.UpstreamCause)
 			}

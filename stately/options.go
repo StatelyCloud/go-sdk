@@ -119,24 +119,11 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 				o.transport,
 				200*time.Millisecond,
 			)
-		} else {
-			clientID := o.ClientID
-			if clientID == "" {
-				clientID = os.Getenv("STATELY_CLIENT_ID")
-			}
-			clientSecret := o.ClientSecret
-			if clientSecret == "" {
-				clientSecret = os.Getenv("STATELY_CLIENT_SECRET")
-			}
-			if clientID != "" && clientSecret != "" {
-				o.AuthTokenProvider = auth.InitServerAuth(appCtx, clientID, clientSecret, nil)
-			}
 		}
-
 		if o.AuthTokenProvider == nil {
 			return nil, fmt.Errorf(
-				"unable to find client credentials in STATELY_ACCESS_KEY or STATELY_CLIENT_ID and" +
-					" STATELY_CLIENT_SECRET environment variables. Either pass your credentials in explicitly or set these environment variables",
+				"unable to find an access key in the STATELY_ACCESS_KEY environment variable. " +
+					"Either pass your access key in the options when creating a client or set this environment variable",
 			)
 		}
 	}

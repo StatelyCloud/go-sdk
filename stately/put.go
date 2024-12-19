@@ -22,6 +22,14 @@ type WithPutOptions struct {
 	// condition only applies to key paths that do not contain the `initialValue`
 	// field.
 	MustNotExist bool
+
+	// If set to true, the server will set the `createdAtTime` and/or
+	// `lastModifiedAtTime` fields based on the current values in this item
+	// (assuming you've mapped them to a field using `fromMetadata`). Without
+	// this, those fields are always ignored and the server sets them to the
+	// appropriate times. This option can be useful when migrating data from
+	// another system.
+	OverwriteMetadataTimestamps bool
 }
 
 func (c *client) Put(ctx context.Context, item Item) (Item, error) {
@@ -78,8 +86,9 @@ func mapPutRequestWithOptions(itemsOrOptions []Item) (items []Item, putItems []*
 		}
 		items[i] = withOptions.Item
 		putItems[i] = &db.PutItem{
-			Item:         item,
-			MustNotExist: withOptions.MustNotExist,
+			Item:                        item,
+			MustNotExist:                withOptions.MustNotExist,
+			OverwriteMetadataTimestamps: withOptions.OverwriteMetadataTimestamps,
 		}
 	}
 	return items, putItems, err

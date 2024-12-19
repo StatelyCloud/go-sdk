@@ -50,6 +50,7 @@ func (m *PutItem) CloneVT() *PutItem {
 	}
 	r := new(PutItem)
 	r.Item = m.Item.CloneVT()
+	r.OverwriteMetadataTimestamps = m.OverwriteMetadataTimestamps
 	r.MustNotExist = m.MustNotExist
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
@@ -131,6 +132,9 @@ func (this *PutItem) EqualVT(that *PutItem) bool {
 		return false
 	}
 	if !this.Item.EqualVT(that.Item) {
+		return false
+	}
+	if this.OverwriteMetadataTimestamps != that.OverwriteMetadataTimestamps {
 		return false
 	}
 	if this.MustNotExist != that.MustNotExist {
@@ -274,6 +278,16 @@ func (m *PutItem) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
+	if m.OverwriteMetadataTimestamps {
+		i--
+		if m.OverwriteMetadataTimestamps {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
 	if m.Item != nil {
 		size, err := m.Item.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -363,6 +377,9 @@ func (m *PutItem) SizeVT() (n int) {
 	if m.Item != nil {
 		l = m.Item.SizeVT()
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.OverwriteMetadataTimestamps {
+		n += 2
 	}
 	if m.MustNotExist {
 		n += 2
@@ -575,6 +592,26 @@ func (m *PutItem) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OverwriteMetadataTimestamps", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.OverwriteMetadataTimestamps = bool(v != 0)
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MustNotExist", wireType)
