@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/planetscale/vtprotobuf/codec/grpc"
 
 	"github.com/StatelyCloud/go-sdk/pb/db/dbconnect"
+	"github.com/StatelyCloud/go-sdk/sconnect"
 	"github.com/StatelyCloud/go-sdk/sdkerror"
 )
 
@@ -375,10 +375,7 @@ func NewClient(
 		client: dbconnect.NewDatabaseServiceClient(
 			opts.HTTPClient(),
 			opts.Endpoint,
-			connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
-			connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
-			// By default Connect compresses everything, which is unnecessary for small messages
-			connect.WithCompressMinBytes(1024),
+			sconnect.ConnectClientOptions...,
 		),
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,

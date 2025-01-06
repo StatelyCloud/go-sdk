@@ -84,8 +84,6 @@ func TestOptions_Merge(t *testing.T) {
 			initial: stately.Options{},
 			merge: stately.Options{
 				AccessKey:          "access-key",
-				ClientID:           "client-id",
-				ClientSecret:       "client-secret",
 				Region:             "us-east-1",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud",
 				JSONResponseFormat: true,
@@ -93,8 +91,6 @@ func TestOptions_Merge(t *testing.T) {
 			},
 			expected: stately.Options{
 				AccessKey:          "access-key",
-				ClientID:           "client-id",
-				ClientSecret:       "client-secret",
 				Region:             "us-east-1",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud",
 				JSONResponseFormat: true,
@@ -104,8 +100,6 @@ func TestOptions_Merge(t *testing.T) {
 			name: "Overwrite initial",
 			initial: stately.Options{
 				AccessKey:          "access-key-old",
-				ClientID:           "client-id-old",
-				ClientSecret:       "client-secret-old",
 				Region:             "us-east-1-old",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud-old",
 				JSONResponseFormat: false,
@@ -113,8 +107,6 @@ func TestOptions_Merge(t *testing.T) {
 			},
 			merge: stately.Options{
 				AccessKey:          "access-key",
-				ClientID:           "client-id",
-				ClientSecret:       "client-secret",
 				Region:             "us-east-1",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud",
 				JSONResponseFormat: true,
@@ -122,8 +114,6 @@ func TestOptions_Merge(t *testing.T) {
 			},
 			expected: stately.Options{
 				AccessKey:          "access-key",
-				ClientID:           "client-id",
-				ClientSecret:       "client-secret",
 				Region:             "us-east-1",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud",
 				JSONResponseFormat: true,
@@ -133,8 +123,6 @@ func TestOptions_Merge(t *testing.T) {
 			name: "Don't overwrite if not set",
 			initial: stately.Options{
 				AccessKey:          "access-key-old",
-				ClientID:           "client-id-old",
-				ClientSecret:       "client-secret-old",
 				Region:             "us-east-1-old",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud-old",
 				JSONResponseFormat: false,
@@ -143,8 +131,6 @@ func TestOptions_Merge(t *testing.T) {
 			merge: stately.Options{},
 			expected: stately.Options{
 				AccessKey:          "access-key-old",
-				ClientID:           "client-id-old",
-				ClientSecret:       "client-secret-old",
 				Region:             "us-east-1-old",
 				Endpoint:           "https://us-east-1.aws.api.stately.cloud-old",
 				JSONResponseFormat: false,

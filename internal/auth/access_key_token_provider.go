@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/planetscale/vtprotobuf/codec/grpc"
 	"golang.org/x/net/http2"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/StatelyCloud/go-sdk/pb/auth"
 	"github.com/StatelyCloud/go-sdk/pb/auth/authconnect"
+	"github.com/StatelyCloud/go-sdk/sconnect"
 	"github.com/StatelyCloud/go-sdk/sdkerror"
 )
 
@@ -160,8 +160,7 @@ func createAuthServiceClient(endpoint string, transport *http2.Transport) authco
 	client := authconnect.NewAuthServiceClient(
 		httpClient,
 		endpoint,
-		connect.WithCodec(grpc.Codec{}), // enable vtprotobuf codec
-		connect.WithInterceptors(sdkerror.ConnectErrorInterceptor()),
+		sconnect.ConnectClientOptions...,
 	)
 	return client
 }

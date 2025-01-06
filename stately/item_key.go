@@ -1,9 +1,17 @@
 package stately
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"strconv"
+)
+
+const (
+	// pathDelimiter is the delimiter used to delimit key path segments.
+	pathDelimiter rune = '/'
+	// escapeChar is the escape character used in key IDs.
+	escapeChar rune = '%'
 )
 
 var encoding = base64.RawURLEncoding.Strict()
@@ -19,7 +27,7 @@ func ToKeyID[T [16]byte | string | uint64 | uint32 | int64 | int32 | []byte](id 
 	case []byte:
 		keyID = encoding.EncodeToString(v)
 	case string:
-		keyID = v
+		keyID = encodeString(v)
 	case uint64:
 		keyID = strconv.FormatUint(v, 10)
 	case uint32:
@@ -33,4 +41,18 @@ func ToKeyID[T [16]byte | string | uint64 | uint32 | int64 | int32 | []byte](id 
 	}
 
 	return keyID
+}
+
+// encodeString encodes a string to be used as a key ID.
+// string based KeyIDs must escape '/' and '%' with '%'.
+func encodeString(s string) string {
+	var bb bytes.Buffer
+	bb.Grow(len(s))
+	for _, c := range s {
+		if c == pathDelimiter || c == escapeChar {
+			bb.WriteRune(escapeChar)
+		}
+		bb.WriteRune(c)
+	}
+	return bb.String()
 }

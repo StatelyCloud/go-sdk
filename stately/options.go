@@ -25,19 +25,10 @@ type Options struct {
 	// from the STATELY_ACCESS_KEY environment variable.
 	AccessKey string
 
-	// ClientID is your Stately Client ID. If not set, this is loaded from the
-	// STATELY_CLIENT_ID environment variable when using the default
-	// AuthTokenProvider.
-	//
-	// Deprecated: Prefer using access keys.
-	ClientID string
-
-	// ClientSecret is your Stately Client ID. If not set, this is loaded from the
-	// STATELY_CLIENT_SECRET environment variable when using the default
-	// AuthTokenProvider.
-	//
-	// Deprecated: Prefer using access keys.
-	ClientSecret string
+	// NoAuth is a flag to indicate that the client should not attempt to get an
+	// auth token. This is used when talking to the Stately BYOC Data Plane on
+	// localhost.
+	NoAuth bool
 
 	// AuthTokenProvider handles fetching auth tokens for requests. It is
 	// defaulted to an appropriate implementation for most services.
@@ -47,7 +38,7 @@ type Options struct {
 	// result in an error. An empty Region and Endpoint will default to
 	// https://api.stately.cloud
 	//
-	// Region is the Stately environment to use. This is used to determine
+	// Region is the cloud region to use. This is used to determine
 	// the correct endpoint to use for SDK calls.
 	//
 	Region string
@@ -103,7 +94,7 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 
 	o.transport = createTransport(o.Endpoint)
 
-	if o.AuthTokenProvider == nil {
+	if o.AuthTokenProvider == nil && !o.NoAuth {
 		accessKey := o.AccessKey
 		if accessKey == "" {
 			accessKey = os.Getenv("STATELY_ACCESS_KEY")
@@ -135,12 +126,6 @@ func (o *Options) Merge(o2 *Options) *Options {
 	if o2 == nil {
 		return o
 	}
-	if o2.ClientID != "" {
-		o.ClientID = o2.ClientID
-	}
-	if o2.ClientSecret != "" {
-		o.ClientSecret = o2.ClientSecret
-	}
 	if o2.AuthTokenProvider != nil {
 		o.AuthTokenProvider = o2.AuthTokenProvider
 	}
@@ -156,6 +141,7 @@ func (o *Options) Merge(o2 *Options) *Options {
 	if o2.AccessKey != "" {
 		o.AccessKey = o2.AccessKey
 	}
+	o.NoAuth = o2.NoAuth
 	o.transport = nil
 	return o
 }
