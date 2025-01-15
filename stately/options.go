@@ -59,6 +59,10 @@ type Options struct {
 	// Defaults to false.
 	JSONResponseFormat bool
 
+	// (internal) NoAdmin is an internal flag used by Stately employees.
+	// This flag has no effect for non-Stately Employees.
+	NoAdmin bool
+
 	// Cached transport to our service endpoint.
 	transport *http2.Transport
 }
@@ -142,6 +146,7 @@ func (o *Options) Merge(o2 *Options) *Options {
 		o.AccessKey = o2.AccessKey
 	}
 	o.NoAuth = o2.NoAuth
+	o.NoAdmin = o2.NoAdmin
 	o.transport = nil
 	return o
 }
@@ -186,6 +191,14 @@ func (o *Options) HTTPClient() *http.Client {
 		httpClient = wrapRoundTripperFunc(httpClient,
 			func(req *http.Request, next http.RoundTripper) (*http.Response, error) {
 				req.Header.Set("sc-rf", "application/json")
+				return next.RoundTrip(req)
+			})
+	}
+
+	if o.NoAdmin {
+		httpClient = wrapRoundTripperFunc(httpClient,
+			func(req *http.Request, next http.RoundTripper) (*http.Response, error) {
+				req.Header.Set("X-Stately-NoAdmin", "1")
 				return next.RoundTrip(req)
 			})
 	}
