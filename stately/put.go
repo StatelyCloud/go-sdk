@@ -2,6 +2,7 @@ package stately
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 
 	"connectrpc.com/connect"
@@ -55,7 +56,7 @@ func (c *client) PutBatch(ctx context.Context, batch ...Item) ([]Item, error) {
 		return nil, err
 	}
 
-	return items, mapPutResponses(resp.Msg.GetItems(), items)
+	return mapPutResponses(resp.Msg.GetItems(), items)
 }
 
 // mapPutRequestWithOptions maps a list of items or WithOptions to a list of
@@ -97,16 +98,18 @@ func mapPutRequestWithOptions(itemsOrOptions []Item) (items []Item, putItems []*
 // Replace the list of items in place with the results of the put operation.
 // This is needed because UnmarshalStately needs an item of the correct type to
 // unmarshal into.
-// shared between transactional and non-transactional put.
-func mapPutResponses(results []*db.Item, original []Item) error {
-	if results == nil {
-		return nil
+// Shared between transactional and non-transactional put.
+func mapPutResponses(toUnmarshal []*db.Item, original []Item) ([]Item, error) {
+	if toUnmarshal == nil {
+		return nil, nil
 	}
-	// map the results back
-	for idx, result := range results {
-		if err := original[idx].UnmarshalStately(result); err != nil {
-			return err
+
+	result := make([]Item, len(toUnmarshal))
+	for idx, item := range toUnmarshal {
+		result[idx] = reflect.New(reflect.TypeOf(original[idx]).Elem()).Interface().(Item)
+		if err := result[idx].UnmarshalStately(item); err != nil {
+			return nil, err
 		}
 	}
-	return nil
+	return result, nil
 }

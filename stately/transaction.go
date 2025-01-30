@@ -110,12 +110,12 @@ func (t *transaction) commit() (*TransactionResults, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = mapPutResponses(resp.GetPutResults(), t.putRequests)
+	putResults, err := mapPutResponses(resp.GetPutResults(), t.putRequests)
 	if err != nil {
 		return nil, err
 	}
 	return &TransactionResults{
-		PutResponse:    t.putRequests,
+		PutResponse:    putResults,
 		DeleteResponse: mapDeleteResponse(resp.GetDeleteResults()),
 		Committed:      resp.GetCommitted(),
 	}, nil
