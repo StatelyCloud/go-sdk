@@ -49,7 +49,8 @@ func (r *Reset) IsSyncResponse() {}
 
 func (c *client) SyncList(ctx context.Context, token []byte) (ListResponse[SyncResponse], error) {
 	resp, err := c.client.SyncList(ctx, connect.NewRequest(&db.SyncListRequest{
-		TokenData: token,
+		TokenData:       token,
+		SchemaVersionId: uint32(c.schemaVersionID),
 	}))
 	if err != nil {
 		return nil, err
