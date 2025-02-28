@@ -10,6 +10,11 @@ import (
 	pberrors "github.com/StatelyCloud/go-sdk/pb/errors"
 )
 
+// Below are common attribute keys we use.
+const (
+	MethodKey = "Method"
+)
+
 type clientErrorInterceptor struct{}
 
 // ConnectErrorInterceptor creates interceptors for connect clients.
@@ -63,13 +68,13 @@ func (v *errorHandlingClientConn) Send(m any) error {
 }
 
 // newEOF creates an EOF SDKError.
-func newEOF(msg, source string) error {
+func newEOF(msg, method string) error {
 	return &Error{
 		Code:        connect.CodeFailedPrecondition,
 		StatelyCode: "StreamClosed",
 		Message:     msg,
 		attrs: map[string]string{
-			"Source": source,
+			MethodKey: method,
 		},
 		CauseErr: io.EOF,
 	}
@@ -77,7 +82,7 @@ func newEOF(msg, source string) error {
 
 // fromRPC looks for a connect error and attempts to converts it into
 // a SDKError with additional expended details.
-func fromRPC(err error, source string) error {
+func fromRPC(err error, method string) error {
 	if err == nil {
 		return nil
 	}
@@ -86,7 +91,7 @@ func fromRPC(err error, source string) error {
 		Code:        connect.CodeUnknown,
 		StatelyCode: "Unknown",
 		attrs: map[string]string{
-			"Source": source,
+			MethodKey: method,
 		},
 		Message: err.Error(),
 	}
@@ -104,6 +109,9 @@ func fromRPC(err error, source string) error {
 	case errors.As(err, &ce):
 		result.Code = ce.Code()
 		if detail := extractStatelyDetails(ce); detail != nil {
+			// if we got stately details then this will already have the method in the
+			// message so we can remove it from the attributes.
+			delete(result.attrs, MethodKey)
 			result.StatelyCode = StatelyErrorCode(detail.StatelyCode)
 			result.Message = detail.Message
 			rid := ce.Meta().Get("st-rid")

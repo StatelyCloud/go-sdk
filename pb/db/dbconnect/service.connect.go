@@ -45,12 +45,12 @@ const (
 	// DatabaseServiceContinueListProcedure is the fully-qualified name of the DatabaseService's
 	// ContinueList RPC.
 	DatabaseServiceContinueListProcedure = "/stately.db.DatabaseService/ContinueList"
-	// DatabaseServiceBeginListItemsOfTypeProcedure is the fully-qualified name of the DatabaseService's
-	// BeginListItemsOfType RPC.
-	DatabaseServiceBeginListItemsOfTypeProcedure = "/stately.db.DatabaseService/BeginListItemsOfType"
-	// DatabaseServiceContinueListItemsOfTypeProcedure is the fully-qualified name of the
-	// DatabaseService's ContinueListItemsOfType RPC.
-	DatabaseServiceContinueListItemsOfTypeProcedure = "/stately.db.DatabaseService/ContinueListItemsOfType"
+	// DatabaseServiceBeginScanProcedure is the fully-qualified name of the DatabaseService's BeginScan
+	// RPC.
+	DatabaseServiceBeginScanProcedure = "/stately.db.DatabaseService/BeginScan"
+	// DatabaseServiceContinueScanProcedure is the fully-qualified name of the DatabaseService's
+	// ContinueScan RPC.
+	DatabaseServiceContinueScanProcedure = "/stately.db.DatabaseService/ContinueScan"
 	// DatabaseServiceSyncListProcedure is the fully-qualified name of the DatabaseService's SyncList
 	// RPC.
 	DatabaseServiceSyncListProcedure = "/stately.db.DatabaseService/SyncList"
@@ -64,17 +64,17 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	databaseServiceServiceDescriptor                       = db.File_db_service_proto.Services().ByName("DatabaseService")
-	databaseServicePutMethodDescriptor                     = databaseServiceServiceDescriptor.Methods().ByName("Put")
-	databaseServiceGetMethodDescriptor                     = databaseServiceServiceDescriptor.Methods().ByName("Get")
-	databaseServiceDeleteMethodDescriptor                  = databaseServiceServiceDescriptor.Methods().ByName("Delete")
-	databaseServiceBeginListMethodDescriptor               = databaseServiceServiceDescriptor.Methods().ByName("BeginList")
-	databaseServiceContinueListMethodDescriptor            = databaseServiceServiceDescriptor.Methods().ByName("ContinueList")
-	databaseServiceBeginListItemsOfTypeMethodDescriptor    = databaseServiceServiceDescriptor.Methods().ByName("BeginListItemsOfType")
-	databaseServiceContinueListItemsOfTypeMethodDescriptor = databaseServiceServiceDescriptor.Methods().ByName("ContinueListItemsOfType")
-	databaseServiceSyncListMethodDescriptor                = databaseServiceServiceDescriptor.Methods().ByName("SyncList")
-	databaseServiceTransactionMethodDescriptor             = databaseServiceServiceDescriptor.Methods().ByName("Transaction")
-	databaseServiceScanRootPathsMethodDescriptor           = databaseServiceServiceDescriptor.Methods().ByName("ScanRootPaths")
+	databaseServiceServiceDescriptor             = db.File_db_service_proto.Services().ByName("DatabaseService")
+	databaseServicePutMethodDescriptor           = databaseServiceServiceDescriptor.Methods().ByName("Put")
+	databaseServiceGetMethodDescriptor           = databaseServiceServiceDescriptor.Methods().ByName("Get")
+	databaseServiceDeleteMethodDescriptor        = databaseServiceServiceDescriptor.Methods().ByName("Delete")
+	databaseServiceBeginListMethodDescriptor     = databaseServiceServiceDescriptor.Methods().ByName("BeginList")
+	databaseServiceContinueListMethodDescriptor  = databaseServiceServiceDescriptor.Methods().ByName("ContinueList")
+	databaseServiceBeginScanMethodDescriptor     = databaseServiceServiceDescriptor.Methods().ByName("BeginScan")
+	databaseServiceContinueScanMethodDescriptor  = databaseServiceServiceDescriptor.Methods().ByName("ContinueScan")
+	databaseServiceSyncListMethodDescriptor      = databaseServiceServiceDescriptor.Methods().ByName("SyncList")
+	databaseServiceTransactionMethodDescriptor   = databaseServiceServiceDescriptor.Methods().ByName("Transaction")
+	databaseServiceScanRootPathsMethodDescriptor = databaseServiceServiceDescriptor.Methods().ByName("ScanRootPaths")
 )
 
 // DatabaseServiceClient is a client for the stately.db.DatabaseService service.
@@ -123,25 +123,24 @@ type DatabaseServiceClient interface {
 	// ContinueList with its token should also be allowed.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	ContinueList(context.Context, *connect.Request[db.ContinueListRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
-	// BeginListItemsOfType retrieves all Items of the provided types in the store.
-	// BeginListItemsOfType will return an empty result set if
-	// there are no items of the provided types. This API returns a token that
-	// you can pass to ContinueListItemsOfType to paginate through the result set.
-	// This can fail if the caller does not have permission to read Items.
+	// BeginScan initiates a scan request which will scan over the entire store
+	// and apply the provided filters. This API returns a token that you can pass
+	// to ContinueScan to paginate through the result set. This can fail if the
+	// caller does not have permission to read Items.
+	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
+	// OF ITEMS.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+	BeginScan(context.Context, *connect.Request[db.BeginScanRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
+	// ContinueScan takes the token from a BeginScan call and returns more results
+	// based on the original request parameters and pagination options. It has
+	// very few options of its own because it is a continuation of a previous list
+	// operation. It will return a new token which can be used for another
+	// ContinueScan call, and so on. Calls to ContinueScan are tied to the
+	// authorization of the original BeginScan call, so if the original BeginScan
+	// call was allowed, ContinueScan with its token should also be allowed.
 	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-	BeginListItemsOfType(context.Context, *connect.Request[db.BeginListItemsOfTypeRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
-	// ContinueListItemsOfType takes the token from a BeginListItemsOfType call
-	// and returns more results based on the original request parameters and
-	// pagination options. It has very few options of its own because it is a
-	// continuation of a previous list operation. It will return a new token which
-	// can be used for another ContinueListItemsOfType call, and so on. Calls to
-	// ContinueListItemsOfType are tied to the authorization of the original
-	// BeginListItemsOfType call, so if the original BeginListItemsOfType call was
-	// allowed, ContinueListRequest with its token should also be allowed.
-	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
-	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-	ContinueListItemsOfType(context.Context, *connect.Request[db.ContinueListItemsOfTypeRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
+	ContinueScan(context.Context, *connect.Request[db.ContinueScanRequest]) (*connect.ServerStreamForClient[db.ListResponse], error)
 	// SyncList returns all changes to Items within the result set of a previous
 	// List operation. For all Items within the result set that were modified, it
 	// returns the full Item at in its current state. It also returns a list of
@@ -220,17 +219,17 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
-		beginListItemsOfType: connect.NewClient[db.BeginListItemsOfTypeRequest, db.ListResponse](
+		beginScan: connect.NewClient[db.BeginScanRequest, db.ListResponse](
 			httpClient,
-			baseURL+DatabaseServiceBeginListItemsOfTypeProcedure,
-			connect.WithSchema(databaseServiceBeginListItemsOfTypeMethodDescriptor),
+			baseURL+DatabaseServiceBeginScanProcedure,
+			connect.WithSchema(databaseServiceBeginScanMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
-		continueListItemsOfType: connect.NewClient[db.ContinueListItemsOfTypeRequest, db.ListResponse](
+		continueScan: connect.NewClient[db.ContinueScanRequest, db.ListResponse](
 			httpClient,
-			baseURL+DatabaseServiceContinueListItemsOfTypeProcedure,
-			connect.WithSchema(databaseServiceContinueListItemsOfTypeMethodDescriptor),
+			baseURL+DatabaseServiceContinueScanProcedure,
+			connect.WithSchema(databaseServiceContinueScanMethodDescriptor),
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
@@ -259,16 +258,16 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // databaseServiceClient implements DatabaseServiceClient.
 type databaseServiceClient struct {
-	put                     *connect.Client[db.PutRequest, db.PutResponse]
-	get                     *connect.Client[db.GetRequest, db.GetResponse]
-	delete                  *connect.Client[db.DeleteRequest, db.DeleteResponse]
-	beginList               *connect.Client[db.BeginListRequest, db.ListResponse]
-	continueList            *connect.Client[db.ContinueListRequest, db.ListResponse]
-	beginListItemsOfType    *connect.Client[db.BeginListItemsOfTypeRequest, db.ListResponse]
-	continueListItemsOfType *connect.Client[db.ContinueListItemsOfTypeRequest, db.ListResponse]
-	syncList                *connect.Client[db.SyncListRequest, db.SyncListResponse]
-	transaction             *connect.Client[db.TransactionRequest, db.TransactionResponse]
-	scanRootPaths           *connect.Client[db.ScanRootPathsRequest, db.ScanRootPathsResponse]
+	put           *connect.Client[db.PutRequest, db.PutResponse]
+	get           *connect.Client[db.GetRequest, db.GetResponse]
+	delete        *connect.Client[db.DeleteRequest, db.DeleteResponse]
+	beginList     *connect.Client[db.BeginListRequest, db.ListResponse]
+	continueList  *connect.Client[db.ContinueListRequest, db.ListResponse]
+	beginScan     *connect.Client[db.BeginScanRequest, db.ListResponse]
+	continueScan  *connect.Client[db.ContinueScanRequest, db.ListResponse]
+	syncList      *connect.Client[db.SyncListRequest, db.SyncListResponse]
+	transaction   *connect.Client[db.TransactionRequest, db.TransactionResponse]
+	scanRootPaths *connect.Client[db.ScanRootPathsRequest, db.ScanRootPathsResponse]
 }
 
 // Put calls stately.db.DatabaseService.Put.
@@ -296,14 +295,14 @@ func (c *databaseServiceClient) ContinueList(ctx context.Context, req *connect.R
 	return c.continueList.CallServerStream(ctx, req)
 }
 
-// BeginListItemsOfType calls stately.db.DatabaseService.BeginListItemsOfType.
-func (c *databaseServiceClient) BeginListItemsOfType(ctx context.Context, req *connect.Request[db.BeginListItemsOfTypeRequest]) (*connect.ServerStreamForClient[db.ListResponse], error) {
-	return c.beginListItemsOfType.CallServerStream(ctx, req)
+// BeginScan calls stately.db.DatabaseService.BeginScan.
+func (c *databaseServiceClient) BeginScan(ctx context.Context, req *connect.Request[db.BeginScanRequest]) (*connect.ServerStreamForClient[db.ListResponse], error) {
+	return c.beginScan.CallServerStream(ctx, req)
 }
 
-// ContinueListItemsOfType calls stately.db.DatabaseService.ContinueListItemsOfType.
-func (c *databaseServiceClient) ContinueListItemsOfType(ctx context.Context, req *connect.Request[db.ContinueListItemsOfTypeRequest]) (*connect.ServerStreamForClient[db.ListResponse], error) {
-	return c.continueListItemsOfType.CallServerStream(ctx, req)
+// ContinueScan calls stately.db.DatabaseService.ContinueScan.
+func (c *databaseServiceClient) ContinueScan(ctx context.Context, req *connect.Request[db.ContinueScanRequest]) (*connect.ServerStreamForClient[db.ListResponse], error) {
+	return c.continueScan.CallServerStream(ctx, req)
 }
 
 // SyncList calls stately.db.DatabaseService.SyncList.
@@ -367,25 +366,24 @@ type DatabaseServiceHandler interface {
 	// ContinueList with its token should also be allowed.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 	ContinueList(context.Context, *connect.Request[db.ContinueListRequest], *connect.ServerStream[db.ListResponse]) error
-	// BeginListItemsOfType retrieves all Items of the provided types in the store.
-	// BeginListItemsOfType will return an empty result set if
-	// there are no items of the provided types. This API returns a token that
-	// you can pass to ContinueListItemsOfType to paginate through the result set.
-	// This can fail if the caller does not have permission to read Items.
+	// BeginScan initiates a scan request which will scan over the entire store
+	// and apply the provided filters. This API returns a token that you can pass
+	// to ContinueScan to paginate through the result set. This can fail if the
+	// caller does not have permission to read Items.
+	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
+	// OF ITEMS.
+	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+	BeginScan(context.Context, *connect.Request[db.BeginScanRequest], *connect.ServerStream[db.ListResponse]) error
+	// ContinueScan takes the token from a BeginScan call and returns more results
+	// based on the original request parameters and pagination options. It has
+	// very few options of its own because it is a continuation of a previous list
+	// operation. It will return a new token which can be used for another
+	// ContinueScan call, and so on. Calls to ContinueScan are tied to the
+	// authorization of the original BeginScan call, so if the original BeginScan
+	// call was allowed, ContinueScan with its token should also be allowed.
 	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
 	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-	BeginListItemsOfType(context.Context, *connect.Request[db.BeginListItemsOfTypeRequest], *connect.ServerStream[db.ListResponse]) error
-	// ContinueListItemsOfType takes the token from a BeginListItemsOfType call
-	// and returns more results based on the original request parameters and
-	// pagination options. It has very few options of its own because it is a
-	// continuation of a previous list operation. It will return a new token which
-	// can be used for another ContinueListItemsOfType call, and so on. Calls to
-	// ContinueListItemsOfType are tied to the authorization of the original
-	// BeginListItemsOfType call, so if the original BeginListItemsOfType call was
-	// allowed, ContinueListRequest with its token should also be allowed.
-	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
-	// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-	ContinueListItemsOfType(context.Context, *connect.Request[db.ContinueListItemsOfTypeRequest], *connect.ServerStream[db.ListResponse]) error
+	ContinueScan(context.Context, *connect.Request[db.ContinueScanRequest], *connect.ServerStream[db.ListResponse]) error
 	// SyncList returns all changes to Items within the result set of a previous
 	// List operation. For all Items within the result set that were modified, it
 	// returns the full Item at in its current state. It also returns a list of
@@ -460,17 +458,17 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	databaseServiceBeginListItemsOfTypeHandler := connect.NewServerStreamHandler(
-		DatabaseServiceBeginListItemsOfTypeProcedure,
-		svc.BeginListItemsOfType,
-		connect.WithSchema(databaseServiceBeginListItemsOfTypeMethodDescriptor),
+	databaseServiceBeginScanHandler := connect.NewServerStreamHandler(
+		DatabaseServiceBeginScanProcedure,
+		svc.BeginScan,
+		connect.WithSchema(databaseServiceBeginScanMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
-	databaseServiceContinueListItemsOfTypeHandler := connect.NewServerStreamHandler(
-		DatabaseServiceContinueListItemsOfTypeProcedure,
-		svc.ContinueListItemsOfType,
-		connect.WithSchema(databaseServiceContinueListItemsOfTypeMethodDescriptor),
+	databaseServiceContinueScanHandler := connect.NewServerStreamHandler(
+		DatabaseServiceContinueScanProcedure,
+		svc.ContinueScan,
+		connect.WithSchema(databaseServiceContinueScanMethodDescriptor),
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
@@ -506,10 +504,10 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceBeginListHandler.ServeHTTP(w, r)
 		case DatabaseServiceContinueListProcedure:
 			databaseServiceContinueListHandler.ServeHTTP(w, r)
-		case DatabaseServiceBeginListItemsOfTypeProcedure:
-			databaseServiceBeginListItemsOfTypeHandler.ServeHTTP(w, r)
-		case DatabaseServiceContinueListItemsOfTypeProcedure:
-			databaseServiceContinueListItemsOfTypeHandler.ServeHTTP(w, r)
+		case DatabaseServiceBeginScanProcedure:
+			databaseServiceBeginScanHandler.ServeHTTP(w, r)
+		case DatabaseServiceContinueScanProcedure:
+			databaseServiceContinueScanHandler.ServeHTTP(w, r)
 		case DatabaseServiceSyncListProcedure:
 			databaseServiceSyncListHandler.ServeHTTP(w, r)
 		case DatabaseServiceTransactionProcedure:
@@ -545,12 +543,12 @@ func (UnimplementedDatabaseServiceHandler) ContinueList(context.Context, *connec
 	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.ContinueList is not implemented"))
 }
 
-func (UnimplementedDatabaseServiceHandler) BeginListItemsOfType(context.Context, *connect.Request[db.BeginListItemsOfTypeRequest], *connect.ServerStream[db.ListResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.BeginListItemsOfType is not implemented"))
+func (UnimplementedDatabaseServiceHandler) BeginScan(context.Context, *connect.Request[db.BeginScanRequest], *connect.ServerStream[db.ListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.BeginScan is not implemented"))
 }
 
-func (UnimplementedDatabaseServiceHandler) ContinueListItemsOfType(context.Context, *connect.Request[db.ContinueListItemsOfTypeRequest], *connect.ServerStream[db.ListResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.ContinueListItemsOfType is not implemented"))
+func (UnimplementedDatabaseServiceHandler) ContinueScan(context.Context, *connect.Request[db.ContinueScanRequest], *connect.ServerStream[db.ListResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.ContinueScan is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) SyncList(context.Context, *connect.Request[db.SyncListRequest], *connect.ServerStream[db.SyncListResponse]) error {
