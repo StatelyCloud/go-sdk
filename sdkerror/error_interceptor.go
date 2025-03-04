@@ -114,10 +114,6 @@ func fromRPC(err error, method string) error {
 			delete(result.attrs, MethodKey)
 			result.StatelyCode = StatelyErrorCode(detail.StatelyCode)
 			result.Message = detail.Message
-			rid := ce.Meta().Get("st-rid")
-			if rid != "" {
-				result.Message = result.Message + " (Request ID: " + rid + ")"
-			}
 			if detail.UpstreamCause != "" {
 				result.CauseErr = errors.New(detail.UpstreamCause)
 			}
