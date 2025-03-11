@@ -135,6 +135,50 @@ type Client interface {
 	//   token, err := iter.Token() // Save this for ContinueList/SyncList
 	ContinueList(ctx context.Context, token []byte) (ListResponse[Item], error)
 
+	// BeginScan retrieves all Items from the Store. This API returns a token that
+	// you can pass to ContinueScan to expand the result set. This can fail if the
+	// caller does not have permission to read Items.
+	//
+	// The options parameter is optional and can be used to limit the number of
+	// results in a page, return only items of a certain type, or implement
+	// parallel segmented scans. If you provide multiple options objects, the last
+	// one will take precedence.
+	//
+	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
+	// OF ITEMS.
+	//
+	// Example:
+	//   iter, err := client.BeginScan(ctx, stately.ScanOptions{Limit: 10, ItemTypes: []string{"Movie"}})
+	//   if err != nil { return err }
+	//   for iter.Next() {
+	//     item := iter.Value()
+	//     // do something with item
+	//   }
+	//   token, err := iter.Token() // Save this for ContinueScan
+	BeginScan(ctx context.Context, opts ...ScanOptions) (ListResponse[Item], error)
+
+	// ContinueScan takes the token from a BeginScan call and returns the next
+	// "page" of results based on the original scan parameters and pagination
+	// options. It will return a new token which can be used for another
+	// ContinueScan call, and so on. Each time you call ContinueScan, you
+	// should pass the latest version of the token, and then use the new token
+	// from the result in subsequent calls. Calls to ContinueScan are tied to the
+	// authorization of the original BeginScan call, so if the original BeginScan
+	// call was allowed, ContinueScan with its token should also be allowed.
+	//
+	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
+	// OF ITEMS.
+	//
+	// Example:
+	//   iter, err := client.ContinueScan(ctx, token.Data)
+	//   if err != nil { return err }
+	//   for iter.Next() {
+	//     item := iter.Value()
+	//     // do something with item
+	//   }
+	//   token, err := iter.Token() // Save this for ContinueScan
+	ContinueScan(ctx context.Context, token []byte) (ListResponse[Item], error)
+
 	// NewTransaction starts a new transaction on a stream, and calls the handler
 	// with a Transaction object. The handler can then interact with the
 	// transaction by calling APIs like Get, Put, Delete, and BeginList. The

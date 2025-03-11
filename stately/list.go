@@ -9,17 +9,6 @@ import (
 	"github.com/StatelyCloud/go-sdk/pb/db"
 )
 
-// ListRequest starts a list operation.
-type ListRequest struct {
-	// KeyPathPrefix must contain at least a full group key but can optionally
-	// contain any number of path components to narrow your list result. Example:
-	// [/state-washington]/city - the first segment is the group key, and this
-	// would return all cities in washington. Separately, you could issue a list
-	// request with just `/state-washington` which would also return the item at
-	// "/state-washington"
-	KeyPathPrefix string
-}
-
 // ListOptions are optional parameters for List.
 type ListOptions struct {
 	// Limit is the maximum number of items to return. The default is unlimited -

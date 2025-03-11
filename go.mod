@@ -5,12 +5,12 @@ go 1.23.0
 toolchain go1.24.0
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.5-20250130201111-63bb56e20495.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.5-20250219170025-d39267d9df8f.1
 	connectrpc.com/connect v1.18.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20241121165744-79df5c4772f2
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa
+	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7
 	golang.org/x/net v0.35.0
 	golang.org/x/sync v0.11.0
 	google.golang.org/protobuf v1.36.5
