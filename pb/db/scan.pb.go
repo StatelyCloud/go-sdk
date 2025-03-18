@@ -102,9 +102,9 @@ type BeginScanRequest struct {
 	// Filter conditions are combined with OR.
 	FilterCondition []*FilterCondition `protobuf:"bytes,2,rep,name=filter_condition,json=filterCondition,proto3" json:"filter_condition,omitempty"`
 	// limit is the maximum number of items to return. If this is not specified or
-	// set to 0, it will default to unlimited. Fewer items than the limit may be
-	// returned even if there are more items to get - make sure to check
-	// token.can_continue.
+	// set to 0, it will return one server side page of items, which may contain zero of your selected
+	// item types and hence be an empty response.
+	// Be sure to check token.can_continue to see if you have more items left to fetch.
 	Limit uint32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	// segmentation_params is used to enable parallelization of the list operation.
 	// This is useful for bulk processing of large stores.

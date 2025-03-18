@@ -11,8 +11,10 @@ import (
 
 // ScanOptions are optional parameters for Scan.
 type ScanOptions struct {
-	// Limit is the maximum number of items to return. The default is unlimited -
-	// all items will be returned.
+	// Limit is the maximum number of items to return. If set to 0 then the first
+	// page of results will be returned which may empty because it does not
+	// contain items of your selected item types. Be sure to check
+	// token.canContinue to see if there are more results to fetch. The default 0.
 	Limit uint32
 
 	// ItemTypes are the item types to filter by. If not provided, all item
