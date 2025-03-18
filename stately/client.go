@@ -14,6 +14,7 @@ type client struct {
 	client          dbconnect.DatabaseServiceClient
 	storeID         StoreID
 	schemaVersionID SchemaVersionID
+	schemaID        SchemaID
 	itemMapper      ItemTypeMapper
 
 	// allowStale indicates whether operations like get and list can return
@@ -389,6 +390,7 @@ func NewClient(
 	appCtx context.Context,
 	storeID uint64,
 	schemaVersionID uint32,
+	schemaID uint64,
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
 ) (Client, error) {
@@ -424,6 +426,7 @@ func NewClient(
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,
 		schemaVersionID: SchemaVersionID(schemaVersionID),
+		schemaID:        SchemaID(schemaID),
 	}, nil
 }
 
