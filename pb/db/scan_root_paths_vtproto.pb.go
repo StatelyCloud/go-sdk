@@ -27,6 +27,7 @@ func (m *ScanRootPathsRequest) CloneVT() *ScanRootPathsRequest {
 	r.StoreId = m.StoreId
 	r.Limit = m.Limit
 	r.SchemaVersionId = m.SchemaVersionId
+	r.SchemaId = m.SchemaId
 	if rhs := m.PaginationToken; rhs != nil {
 		tmpBytes := make([]byte, len(rhs))
 		copy(tmpBytes, rhs)
@@ -104,6 +105,9 @@ func (this *ScanRootPathsRequest) EqualVT(that *ScanRootPathsRequest) bool {
 		return false
 	}
 	if this.SchemaVersionId != that.SchemaVersionId {
+		return false
+	}
+	if this.SchemaId != that.SchemaId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -200,6 +204,11 @@ func (m *ScanRootPathsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.SchemaId != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaId))
+		i--
+		dAtA[i] = 0x28
 	}
 	if m.SchemaVersionId != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SchemaVersionId))
@@ -336,6 +345,9 @@ func (m *ScanRootPathsRequest) SizeVT() (n int) {
 	}
 	if m.SchemaVersionId != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaVersionId))
+	}
+	if m.SchemaId != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.SchemaId))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -491,6 +503,25 @@ func (m *ScanRootPathsRequest) UnmarshalVT(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.SchemaVersionId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaId", wireType)
+			}
+			m.SchemaId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SchemaId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
