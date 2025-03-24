@@ -417,11 +417,16 @@ func NewClient(
 		return nil, err
 	}
 
+	clientOpts := sconnect.ConnectClientOptions
+	if isLocalEndpoint(opts.Endpoint) {
+		clientOpts = sconnect.LocalConnectClientOptions
+	}
+
 	return &client{
 		client: dbconnect.NewDatabaseServiceClient(
 			opts.HTTPClient(),
 			opts.Endpoint,
-			sconnect.ConnectClientOptions...,
+			clientOpts...,
 		),
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,

@@ -118,7 +118,8 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 		if o.AuthTokenProvider == nil {
 			return nil, fmt.Errorf(
 				"unable to find an access key in the STATELY_ACCESS_KEY environment variable. " +
-					"Either pass your access key in the options when creating a client or set this environment variable",
+					"Either pass your access key in the options when creating a client or set this environment variable. " +
+					"Alternatively, set NoAuth to true in the options if you are using the Stately BYOC Data Plane on localhost",
 			)
 		}
 	}
@@ -151,6 +152,11 @@ func (o *Options) Merge(o2 *Options) *Options {
 	return o
 }
 
+func isLocalEndpoint(endpoint string) bool {
+	return strings.HasPrefix(endpoint, "http://localhost") ||
+		strings.HasPrefix(endpoint, "http://0.0.0.0")
+}
+
 func createTransport(endpoint string) *http2.Transport {
 	// We want to use HTTP/2 (it's required for bidi streams anyway)
 	http2Transport := &http2.Transport{
@@ -160,6 +166,8 @@ func createTransport(endpoint string) *http2.Transport {
 
 	// This allows talking to localhost h2c servers
 	if strings.HasPrefix(endpoint, "http://") {
+		// Disable compression locally
+		http2Transport.DisableCompression = isLocalEndpoint(endpoint)
 		http2Transport.AllowHTTP = true
 		http2Transport.DialTLSContext = func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
 			return net.Dial(network, addr)
