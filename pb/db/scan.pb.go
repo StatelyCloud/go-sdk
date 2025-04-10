@@ -114,11 +114,10 @@ type BeginScanRequest struct {
 	// Please be warned that parallelization will result on increase throughput to your store
 	// which may result in throttling.
 	SegmentationParams *SegmentationParams `protobuf:"bytes,4,opt,name=segmentation_params,json=segmentationParams,proto3" json:"segmentation_params,omitempty"`
-	// schema_version_id refers to the item version to return.
-	// If the store's schema does not have this version, the operation
-	// will error with SchemaVersionNotFound error. You should not have to
-	// set this manually as your generated SDK should know its schema version
-	// and wire this in for you.
+	// schema_version_id is the version of the store's schema to use to interpret
+	// items. If there is no version with this ID, the operation will error with
+	// SchemaVersionNotFound error. You should not have to set this manually as
+	// your generated SDK should know its schema version and wire this in for you.
 	SchemaVersionId uint32 `protobuf:"varint,5,opt,name=schema_version_id,json=schemaVersionId,proto3" json:"schema_version_id,omitempty"`
 	// schema_id refers to the schema to use for this operation.
 	// If the store_id does not have a schema with this ID, the operation will

@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/net/http2"
 
+	"github.com/StatelyCloud/go-sdk"
 	"github.com/StatelyCloud/go-sdk/internal/auth"
 	"github.com/StatelyCloud/go-sdk/pb/db"
 )
@@ -104,9 +105,6 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 			accessKey = os.Getenv("STATELY_ACCESS_KEY")
 		}
 		if accessKey != "" {
-			if o.transport == nil {
-				o.transport = createTransport(o.Endpoint)
-			}
 			o.AuthTokenProvider = auth.AccessKeyAuth(
 				appCtx,
 				accessKey,
@@ -185,6 +183,14 @@ func (o *Options) HTTPClient() *http.Client {
 	httpClient := &http.Client{
 		Transport: o.transport,
 	}
+
+	// Attach the Stately client version to the request.
+	httpClient = wrapRoundTripperFunc(httpClient,
+		func(req *http.Request, next http.RoundTripper) (*http.Response, error) {
+			req.Header.Set("User-Agent", sdk.UserAgentString)
+			return next.RoundTrip(req)
+		},
+	)
 
 	// Install the necessary middleware:
 	if o.AuthTokenProvider != nil {

@@ -95,12 +95,10 @@ type BeginListRequest struct {
 	// sort_direction is the direction to sort the results in. If this is not set,
 	// we will sort in ascending order.
 	SortDirection SortDirection `protobuf:"varint,6,opt,name=sort_direction,json=sortDirection,proto3,enum=stately.db.SortDirection" json:"sort_direction,omitempty"`
-	// schema_version_id refers to the item version to return.
-	//
-	// If the store's schema does not have this version, the operation
-	// will error with SchemaVersionNotFound error. You should not have to
-	// set this manually as your generated SDK should know its schema version
-	// and wire this in for you.
+	// schema_version_id is the version of the store's schema to use to interpret
+	// items. If there is no version with this ID, the operation will error with
+	// SchemaVersionNotFound error. You should not have to set this manually as
+	// your generated SDK should know its schema version and wire this in for you.
 	SchemaVersionId uint32 `protobuf:"varint,7,opt,name=schema_version_id,json=schemaVersionId,proto3" json:"schema_version_id,omitempty"`
 	// schema_id refers to the schema to use for this operation.
 	// If the store_id does not have a schema with this ID, the operation will

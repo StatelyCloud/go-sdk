@@ -36,12 +36,10 @@ type GetRequest struct {
 	// get the old version of the item. This can result in improved performance,
 	// availability, and cost.
 	AllowStale bool `protobuf:"varint,3,opt,name=allow_stale,json=allowStale,proto3" json:"allow_stale,omitempty"`
-	// schema_version_id refers to the item version to return.
-	//
-	// If the store's schema does not have a version with this version, the operation
-	// will error with SchemaVersionNotFound error. You should not have to
-	// set this manually as your generated SDK should know its schema version
-	// and wire this in for you.
+	// schema_version_id is the version of the store's schema to use to interpret
+	// items. If there is no version with this ID, the operation will error with
+	// SchemaVersionNotFound error. You should not have to set this manually as
+	// your generated SDK should know its schema version and wire this in for you.
 	SchemaVersionId uint32 `protobuf:"varint,5,opt,name=schema_version_id,json=schemaVersionId,proto3" json:"schema_version_id,omitempty"`
 	// schema_id refers to the schema to use for this operation.
 	// If the store_id does not have a schema with this ID, the operation will

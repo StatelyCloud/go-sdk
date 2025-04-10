@@ -169,7 +169,7 @@ func createAuthServiceClient(endpoint string, transport *http2.Transport) authco
 func (a *accessKeyAuth) fetchNewAuthToken(ctx context.Context) (*auth.GetAuthTokenResponse, error) {
 	var err error
 	var resp *connect.Response[auth.GetAuthTokenResponse]
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		resp, err = a.client.GetAuthToken(ctx, connect.NewRequest(&auth.GetAuthTokenRequest{
 			Identity: &auth.GetAuthTokenRequest_AccessKey{
 				AccessKey: a.accessKey,

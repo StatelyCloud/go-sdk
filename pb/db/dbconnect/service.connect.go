@@ -57,24 +57,20 @@ const (
 	// DatabaseServiceTransactionProcedure is the fully-qualified name of the DatabaseService's
 	// Transaction RPC.
 	DatabaseServiceTransactionProcedure = "/stately.db.DatabaseService/Transaction"
-	// DatabaseServiceScanRootPathsProcedure is the fully-qualified name of the DatabaseService's
-	// ScanRootPaths RPC.
-	DatabaseServiceScanRootPathsProcedure = "/stately.db.DatabaseService/ScanRootPaths"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	databaseServiceServiceDescriptor             = db.File_db_service_proto.Services().ByName("DatabaseService")
-	databaseServicePutMethodDescriptor           = databaseServiceServiceDescriptor.Methods().ByName("Put")
-	databaseServiceGetMethodDescriptor           = databaseServiceServiceDescriptor.Methods().ByName("Get")
-	databaseServiceDeleteMethodDescriptor        = databaseServiceServiceDescriptor.Methods().ByName("Delete")
-	databaseServiceBeginListMethodDescriptor     = databaseServiceServiceDescriptor.Methods().ByName("BeginList")
-	databaseServiceContinueListMethodDescriptor  = databaseServiceServiceDescriptor.Methods().ByName("ContinueList")
-	databaseServiceBeginScanMethodDescriptor     = databaseServiceServiceDescriptor.Methods().ByName("BeginScan")
-	databaseServiceContinueScanMethodDescriptor  = databaseServiceServiceDescriptor.Methods().ByName("ContinueScan")
-	databaseServiceSyncListMethodDescriptor      = databaseServiceServiceDescriptor.Methods().ByName("SyncList")
-	databaseServiceTransactionMethodDescriptor   = databaseServiceServiceDescriptor.Methods().ByName("Transaction")
-	databaseServiceScanRootPathsMethodDescriptor = databaseServiceServiceDescriptor.Methods().ByName("ScanRootPaths")
+	databaseServiceServiceDescriptor            = db.File_db_service_proto.Services().ByName("DatabaseService")
+	databaseServicePutMethodDescriptor          = databaseServiceServiceDescriptor.Methods().ByName("Put")
+	databaseServiceGetMethodDescriptor          = databaseServiceServiceDescriptor.Methods().ByName("Get")
+	databaseServiceDeleteMethodDescriptor       = databaseServiceServiceDescriptor.Methods().ByName("Delete")
+	databaseServiceBeginListMethodDescriptor    = databaseServiceServiceDescriptor.Methods().ByName("BeginList")
+	databaseServiceContinueListMethodDescriptor = databaseServiceServiceDescriptor.Methods().ByName("ContinueList")
+	databaseServiceBeginScanMethodDescriptor    = databaseServiceServiceDescriptor.Methods().ByName("BeginScan")
+	databaseServiceContinueScanMethodDescriptor = databaseServiceServiceDescriptor.Methods().ByName("ContinueScan")
+	databaseServiceSyncListMethodDescriptor     = databaseServiceServiceDescriptor.Methods().ByName("SyncList")
+	databaseServiceTransactionMethodDescriptor  = databaseServiceServiceDescriptor.Methods().ByName("Transaction")
 )
 
 // DatabaseServiceClient is a client for the stately.db.DatabaseService service.
@@ -166,12 +162,6 @@ type DatabaseServiceClient interface {
 	// fail if another transaction commits before this one finishes - in that
 	// case, you should retry your transaction.
 	Transaction(context.Context) *connect.BidiStreamForClient[db.TransactionRequest, db.TransactionResponse]
-	// ScanRootPaths lists root paths (Groups) in the Store. This is a very
-	// expensive operation, as it must consult multiple partitions and it reads
-	// and ignores a lot of data. It is provided for use in the web console's data
-	// browser and is not exposed to customers. This operation will fail if the
-	// caller does not have permission to read Items.
-	ScanRootPaths(context.Context, *connect.Request[db.ScanRootPathsRequest]) (*connect.Response[db.ScanRootPathsResponse], error)
 }
 
 // NewDatabaseServiceClient constructs a client for the stately.db.DatabaseService service. By
@@ -246,28 +236,20 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(databaseServiceTransactionMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		scanRootPaths: connect.NewClient[db.ScanRootPathsRequest, db.ScanRootPathsResponse](
-			httpClient,
-			baseURL+DatabaseServiceScanRootPathsProcedure,
-			connect.WithSchema(databaseServiceScanRootPathsMethodDescriptor),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
 // databaseServiceClient implements DatabaseServiceClient.
 type databaseServiceClient struct {
-	put           *connect.Client[db.PutRequest, db.PutResponse]
-	get           *connect.Client[db.GetRequest, db.GetResponse]
-	delete        *connect.Client[db.DeleteRequest, db.DeleteResponse]
-	beginList     *connect.Client[db.BeginListRequest, db.ListResponse]
-	continueList  *connect.Client[db.ContinueListRequest, db.ListResponse]
-	beginScan     *connect.Client[db.BeginScanRequest, db.ListResponse]
-	continueScan  *connect.Client[db.ContinueScanRequest, db.ListResponse]
-	syncList      *connect.Client[db.SyncListRequest, db.SyncListResponse]
-	transaction   *connect.Client[db.TransactionRequest, db.TransactionResponse]
-	scanRootPaths *connect.Client[db.ScanRootPathsRequest, db.ScanRootPathsResponse]
+	put          *connect.Client[db.PutRequest, db.PutResponse]
+	get          *connect.Client[db.GetRequest, db.GetResponse]
+	delete       *connect.Client[db.DeleteRequest, db.DeleteResponse]
+	beginList    *connect.Client[db.BeginListRequest, db.ListResponse]
+	continueList *connect.Client[db.ContinueListRequest, db.ListResponse]
+	beginScan    *connect.Client[db.BeginScanRequest, db.ListResponse]
+	continueScan *connect.Client[db.ContinueScanRequest, db.ListResponse]
+	syncList     *connect.Client[db.SyncListRequest, db.SyncListResponse]
+	transaction  *connect.Client[db.TransactionRequest, db.TransactionResponse]
 }
 
 // Put calls stately.db.DatabaseService.Put.
@@ -313,11 +295,6 @@ func (c *databaseServiceClient) SyncList(ctx context.Context, req *connect.Reque
 // Transaction calls stately.db.DatabaseService.Transaction.
 func (c *databaseServiceClient) Transaction(ctx context.Context) *connect.BidiStreamForClient[db.TransactionRequest, db.TransactionResponse] {
 	return c.transaction.CallBidiStream(ctx)
-}
-
-// ScanRootPaths calls stately.db.DatabaseService.ScanRootPaths.
-func (c *databaseServiceClient) ScanRootPaths(ctx context.Context, req *connect.Request[db.ScanRootPathsRequest]) (*connect.Response[db.ScanRootPathsResponse], error) {
-	return c.scanRootPaths.CallUnary(ctx, req)
 }
 
 // DatabaseServiceHandler is an implementation of the stately.db.DatabaseService service.
@@ -409,12 +386,6 @@ type DatabaseServiceHandler interface {
 	// fail if another transaction commits before this one finishes - in that
 	// case, you should retry your transaction.
 	Transaction(context.Context, *connect.BidiStream[db.TransactionRequest, db.TransactionResponse]) error
-	// ScanRootPaths lists root paths (Groups) in the Store. This is a very
-	// expensive operation, as it must consult multiple partitions and it reads
-	// and ignores a lot of data. It is provided for use in the web console's data
-	// browser and is not exposed to customers. This operation will fail if the
-	// caller does not have permission to read Items.
-	ScanRootPaths(context.Context, *connect.Request[db.ScanRootPathsRequest]) (*connect.Response[db.ScanRootPathsResponse], error)
 }
 
 // NewDatabaseServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -485,13 +456,6 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithSchema(databaseServiceTransactionMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	databaseServiceScanRootPathsHandler := connect.NewUnaryHandler(
-		DatabaseServiceScanRootPathsProcedure,
-		svc.ScanRootPaths,
-		connect.WithSchema(databaseServiceScanRootPathsMethodDescriptor),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/stately.db.DatabaseService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DatabaseServicePutProcedure:
@@ -512,8 +476,6 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceSyncListHandler.ServeHTTP(w, r)
 		case DatabaseServiceTransactionProcedure:
 			databaseServiceTransactionHandler.ServeHTTP(w, r)
-		case DatabaseServiceScanRootPathsProcedure:
-			databaseServiceScanRootPathsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -557,8 +519,4 @@ func (UnimplementedDatabaseServiceHandler) SyncList(context.Context, *connect.Re
 
 func (UnimplementedDatabaseServiceHandler) Transaction(context.Context, *connect.BidiStream[db.TransactionRequest, db.TransactionResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.Transaction is not implemented"))
-}
-
-func (UnimplementedDatabaseServiceHandler) ScanRootPaths(context.Context, *connect.Request[db.ScanRootPathsRequest]) (*connect.Response[db.ScanRootPathsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("stately.db.DatabaseService.ScanRootPaths is not implemented"))
 }
