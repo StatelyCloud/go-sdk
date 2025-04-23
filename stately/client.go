@@ -389,7 +389,7 @@ type TransactionHandler func(Transaction) error
 func NewClient(
 	appCtx context.Context,
 	storeID uint64,
-	schemaVersionID uint32,
+	schemaVersionID SchemaVersionID,
 	schemaID uint64,
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
@@ -430,7 +430,7 @@ func NewClient(
 		),
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,
-		schemaVersionID: SchemaVersionID(schemaVersionID),
+		schemaVersionID: schemaVersionID,
 		schemaID:        SchemaID(schemaID),
 	}, nil
 }
