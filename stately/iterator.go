@@ -11,7 +11,7 @@ package stately
 //	 // handle error and token
 type ListResponse[T any] interface {
 	// Next reads an item of the stream, and populates Value() with the current
-	// item.
+	// item. It returns true if an item was read and is ready in Value().
 	Next() bool
 	// Token will only return something when Next() == false, or in other
 	// words, the iteration is done. Either a token or an error will be

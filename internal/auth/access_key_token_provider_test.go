@@ -187,7 +187,7 @@ func TestAccessKeyRefreshContextCancelled(t *testing.T) {
 	)
 
 	token, err := getToken(ctx, false)
-	assert.Equal(t, "", token)
+	assert.Empty(t, token)
 	assert.Error(t, err)
 }
 
