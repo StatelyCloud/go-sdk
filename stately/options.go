@@ -82,16 +82,17 @@ type AuthTokenProvider func(ctx context.Context, force bool) (string, error)
 type ItemTypeMapper func(item *db.Item) (Item, error)
 
 // ApplyDefaults applies the default values (listed in Options) to the options.
-func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
+// It will panic if provided with invalid options.
+func (o *Options) ApplyDefaults(appCtx context.Context) *Options {
 	if o == nil {
 		o = &Options{}
 	}
 
 	// If both endpoint and environment are provided, return an error.
 	if o.Endpoint != "" && o.Region != "" && o.Endpoint != RegionToEndpoint(o.Region) {
-		return nil, fmt.Errorf("both Endpoint: %q and Region: %q are set in options. "+
+		panic(fmt.Sprintf("both Endpoint: %q and Region: %q are set in options. "+
 			"Please provide one or the other, "+
-			"or neither to default to https://api.stately.cloud", o.Endpoint, o.Region)
+			"or neither to default to https://api.stately.cloud", o.Endpoint, o.Region))
 	} else if o.Endpoint == "" {
 		// If there's no endpoint specified, use the region.
 		o.Endpoint = RegionToEndpoint(o.Region)
@@ -114,14 +115,14 @@ func (o *Options) ApplyDefaults(appCtx context.Context) (*Options, error) {
 			)
 		}
 		if o.AuthTokenProvider == nil {
-			return nil, fmt.Errorf(
+			panic(
 				"unable to find an access key in the STATELY_ACCESS_KEY environment variable. " +
 					"Either pass your access key in the options when creating a client or set this environment variable. " +
 					"Alternatively, set NoAuth to true in the options if you are using the Stately BYOC Data Plane on localhost",
 			)
 		}
 	}
-	return o, nil
+	return o
 }
 
 // Merge merges non-default settings from o2 into o.

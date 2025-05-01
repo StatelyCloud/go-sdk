@@ -3,11 +3,8 @@ package stately
 import (
 	"context"
 
-	"connectrpc.com/connect"
-
 	"github.com/StatelyCloud/go-sdk/pb/db/dbconnect"
 	"github.com/StatelyCloud/go-sdk/sconnect"
-	"github.com/StatelyCloud/go-sdk/sdkerror"
 )
 
 type client struct {
@@ -381,11 +378,9 @@ type Transaction interface {
 // handler and we'll take care of cleaning up the transaction.
 type TransactionHandler func(Transaction) error
 
-// NewClient creates a new client with the given store + schema version with options.
-// If your store is regional, you can pass in the region to use.
-// Example:
-//
-//	client, err := stately.NewClient(ctx, 1234, itemTypeMapper, version, stately.Option{Region: "us-east-1"})
+// NewClient creates a new client with the given store + schema version with
+// options.
+// Deprecated: This function is deprecated and will be removed in a future release.
 func NewClient(
 	appCtx context.Context,
 	storeID uint64,
@@ -393,29 +388,53 @@ func NewClient(
 	schemaID uint64,
 	itemTypeMapper ItemTypeMapper,
 	options ...*Options,
-) (Client, error) {
+) Client {
+	return InternalBindClientToTypes(
+		appCtx,
+		storeID,
+		itemTypeMapper,
+		InternalClientOptions{
+			SchemaID:        SchemaID(schemaID),
+			SchemaVersionID: schemaVersionID,
+		},
+		options...,
+	)
+}
+
+// InternalClientOptions are options that will be passed from generated code to
+// the internal client constructor InternalBindClientToTypes. This is a struct
+// to make it so new fields can be added later without breaking backwards
+// compatibility every time, the way adding parameters to a function would.
+type InternalClientOptions struct {
+	// SchemaID is the schema ID that this client was generated for. All its types
+	// are specific to a particular version of this schema.
+	SchemaID
+
+	// SchemaVersionID is the schema version that this client was generated for. All its types are specific to this version.
+	SchemaVersionID
+}
+
+// InternalBindClientToTypes should not be called directly by users - instead,
+// you should use the NewClient function in your generated schema code, which
+// passes the correct type information to this function.
+func InternalBindClientToTypes(
+	appCtx context.Context,
+	storeID uint64,
+	itemTypeMapper ItemTypeMapper,
+	internalOptions InternalClientOptions,
+	options ...*Options,
+) Client {
 	if itemTypeMapper == nil {
-		return nil, &sdkerror.Error{
-			Code:        connect.CodeInvalidArgument,
-			StatelyCode: "InvalidArgument",
-			Message:     "ItemTypeMapper is required when creating a client",
-		}
+		panic("ItemTypeMapper is required when creating a client")
 	}
-	if schemaVersionID == 0 {
-		return nil, &sdkerror.Error{
-			Code:        connect.CodeInvalidArgument,
-			StatelyCode: "InvalidArgument",
-			Message:     "SchemaVersionID is required when creating a client",
-		}
+	if internalOptions.SchemaVersionID == 0 {
+		panic("SchemaVersionID is required when creating a client")
 	}
 	opts := &Options{}
 	for _, o := range options {
 		opts = opts.Merge(o)
 	}
-	opts, err := opts.ApplyDefaults(appCtx)
-	if err != nil {
-		return nil, err
-	}
+	opts = opts.ApplyDefaults(appCtx)
 
 	clientOpts := sconnect.ConnectClientOptions
 	if isLocalEndpoint(opts.Endpoint) {
@@ -430,11 +449,15 @@ func NewClient(
 		),
 		storeID:         StoreID(storeID),
 		itemMapper:      itemTypeMapper,
-		schemaVersionID: schemaVersionID,
-		schemaID:        SchemaID(schemaID),
-	}, nil
+		schemaVersionID: internalOptions.SchemaVersionID,
+		schemaID:        internalOptions.SchemaID,
+	}
 }
 
+// WithAllowStale returns a new client with the given allowStale value set. Any
+// read APIs called with this copy of the client will allow
+// eventually-consistent (i.e. possibly stale) reads, which cost less. By
+// default, clients do not allow stale reads.
 func (c *client) WithAllowStale(allowStale bool) Client {
 	newClient := *c
 	newClient.allowStale = allowStale
