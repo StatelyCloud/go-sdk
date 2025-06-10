@@ -19,36 +19,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-func (m *FilterCondition) CloneVT() *FilterCondition {
-	if m == nil {
-		return (*FilterCondition)(nil)
-	}
-	r := new(FilterCondition)
-	if m.Value != nil {
-		r.Value = m.Value.(interface {
-			CloneVT() isFilterCondition_Value
-		}).CloneVT()
-	}
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = make([]byte, len(m.unknownFields))
-		copy(r.unknownFields, m.unknownFields)
-	}
-	return r
-}
-
-func (m *FilterCondition) CloneMessageVT() proto.Message {
-	return m.CloneVT()
-}
-
-func (m *FilterCondition_ItemType) CloneVT() isFilterCondition_Value {
-	if m == nil {
-		return (*FilterCondition_ItemType)(nil)
-	}
-	r := new(FilterCondition_ItemType)
-	r.ItemType = m.ItemType
-	return r
-}
-
 func (m *BeginScanRequest) CloneVT() *BeginScanRequest {
 	if m == nil {
 		return (*BeginScanRequest)(nil)
@@ -93,51 +63,6 @@ func (m *SegmentationParams) CloneVT() *SegmentationParams {
 
 func (m *SegmentationParams) CloneMessageVT() proto.Message {
 	return m.CloneVT()
-}
-
-func (this *FilterCondition) EqualVT(that *FilterCondition) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if this.Value == nil && that.Value != nil {
-		return false
-	} else if this.Value != nil {
-		if that.Value == nil {
-			return false
-		}
-		if !this.Value.(interface {
-			EqualVT(isFilterCondition_Value) bool
-		}).EqualVT(that.Value) {
-			return false
-		}
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *FilterCondition) EqualMessageVT(thatMsg proto.Message) bool {
-	that, ok := thatMsg.(*FilterCondition)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-func (this *FilterCondition_ItemType) EqualVT(thatIface isFilterCondition_Value) bool {
-	that, ok := thatIface.(*FilterCondition_ItemType)
-	if !ok {
-		return false
-	}
-	if this == that {
-		return true
-	}
-	if this == nil && that != nil || this != nil && that == nil {
-		return false
-	}
-	if this.ItemType != that.ItemType {
-		return false
-	}
-	return true
 }
 
 func (this *BeginScanRequest) EqualVT(that *BeginScanRequest) bool {
@@ -209,62 +134,6 @@ func (this *SegmentationParams) EqualMessageVT(thatMsg proto.Message) bool {
 		return false
 	}
 	return this.EqualVT(that)
-}
-func (m *FilterCondition) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *FilterCondition) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *FilterCondition) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i -= len(m.unknownFields)
-		copy(dAtA[i:], m.unknownFields)
-	}
-	if vtmsg, ok := m.Value.(interface {
-		MarshalToSizedBufferVT([]byte) (int, error)
-	}); ok {
-		size, err := vtmsg.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *FilterCondition_ItemType) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *FilterCondition_ItemType) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i -= len(m.ItemType)
-	copy(dAtA[i:], m.ItemType)
-	i = protohelpers.EncodeVarint(dAtA, i, uint64(len(m.ItemType)))
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
 }
 func (m *BeginScanRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
@@ -384,29 +253,6 @@ func (m *SegmentationParams) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *FilterCondition) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if vtmsg, ok := m.Value.(interface{ SizeVT() int }); ok {
-		n += vtmsg.SizeVT()
-	}
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *FilterCondition_ItemType) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ItemType)
-	n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
-	return n
-}
 func (m *BeginScanRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -455,89 +301,6 @@ func (m *SegmentationParams) SizeVT() (n int) {
 	return n
 }
 
-func (m *FilterCondition) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return protohelpers.ErrIntOverflow
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FilterCondition: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FilterCondition: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ItemType", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Value = &FilterCondition_ItemType{ItemType: string(dAtA[iNdEx:postIndex])}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protohelpers.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *BeginScanRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

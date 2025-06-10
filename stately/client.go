@@ -102,7 +102,7 @@ type Client interface {
 	// options objects, the last one will take precedence.
 	//
 	// Example:
-	//   iter, err := client.BeginList(ctx, "/movies", stately.ListOptions{Limit: 10})
+	//   iter, err := client.BeginList(ctx, "/movies-movieID", stately.ListOptions{Limit: 10})
 	//   if err != nil { return err }
 	//   for iter.Next() {
 	//     item := iter.Value()
