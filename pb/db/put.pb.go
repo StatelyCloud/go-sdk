@@ -27,7 +27,7 @@ type PutRequest struct {
 	// store_id is a globally unique Store ID, which can be looked up from the
 	// console or CLI.
 	StoreId uint64 `protobuf:"varint,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
-	// puts is up to 50 items to be put into the Store.
+	// items to put into the store.
 	Puts []*PutItem `protobuf:"bytes,2,rep,name=puts,proto3" json:"puts,omitempty"`
 	// schema_version_id is the version of the store's schema to use to interpret
 	// items. If there is no version with this ID, the operation will error with
@@ -227,12 +227,11 @@ var File_db_put_proto protoreflect.FileDescriptor
 const file_db_put_proto_rawDesc = "" +
 	"\n" +
 	"\fdb/put.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\rdb/item.proto\"\xb5\x01\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\rdb/item.proto\"\xb3\x01\n" +
 	"\n" +
 	"PutRequest\x12!\n" +
-	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x123\n" +
-	"\x04puts\x18\x02 \x03(\v2\x13.stately.db.PutItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x102R\x04puts\x122\n" +
+	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x121\n" +
+	"\x04puts\x18\x02 \x03(\v2\x13.stately.db.PutItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04puts\x122\n" +
 	"\x11schema_version_id\x18\x03 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +
 	"\tschema_id\x18\x04 \x01(\x04R\bschemaId\"\xa1\x01\n" +
 	"\aPutItem\x12,\n" +

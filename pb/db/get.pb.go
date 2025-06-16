@@ -27,7 +27,7 @@ type GetRequest struct {
 	// store_id is a globally unique Store ID, which can be looked up from the
 	// console or CLI.
 	StoreId uint64 `protobuf:"varint,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
-	// gets is up to 100 requests to get an item by its key path.
+	// key paths to of each item to get.
 	Gets []*GetItem `protobuf:"bytes,2,rep,name=gets,proto3" json:"gets,omitempty"`
 	// allow_stale indicates that you're okay with getting a slightly stale item -
 	// that is, if you had just changed an item and then call GetItem, you might
@@ -208,12 +208,11 @@ var File_db_get_proto protoreflect.FileDescriptor
 const file_db_get_proto_rawDesc = "" +
 	"\n" +
 	"\fdb/get.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\rdb/item.proto\"\xdc\x01\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\rdb/item.proto\"\xda\x01\n" +
 	"\n" +
 	"GetRequest\x12!\n" +
-	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x123\n" +
-	"\x04gets\x18\x02 \x03(\v2\x13.stately.db.GetItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x10dR\x04gets\x12\x1f\n" +
+	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x121\n" +
+	"\x04gets\x18\x02 \x03(\v2\x13.stately.db.GetItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04gets\x12\x1f\n" +
 	"\vallow_stale\x18\x03 \x01(\bR\n" +
 	"allowStale\x122\n" +
 	"\x11schema_version_id\x18\x05 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +

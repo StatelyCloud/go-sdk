@@ -451,7 +451,7 @@ func (x *TransactionBegin) GetSchemaId() uint64 {
 // gets within the context of a transaction.
 type TransactionGet struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// gets is up to 100 requests to get an item its key path.
+	// key paths to of each item to get.
 	Gets          []*GetItem `protobuf:"bytes,1,rep,name=gets,proto3" json:"gets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -636,7 +636,7 @@ func (x *TransactionContinueList) GetDirection() ContinueListDirection {
 // transaction is finished.
 type TransactionPut struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// puts is up to 50 items to be put into the Store.
+	// items to put into the store.
 	Puts          []*PutItem `protobuf:"bytes,1,rep,name=puts,proto3" json:"puts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -684,7 +684,7 @@ func (x *TransactionPut) GetPuts() []*PutItem {
 // until the transaction is finished.
 type TransactionDelete struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// deletes is up to 50 to be deleted from the Group.
+	// key paths of items to delete.
 	Deletes       []*DeleteItem `protobuf:"bytes,1,rep,name=deletes,proto3" json:"deletes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1102,10 +1102,9 @@ const file_db_transaction_proto_rawDesc = "" +
 	"\x10TransactionBegin\x12!\n" +
 	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x122\n" +
 	"\x11schema_version_id\x18\x02 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +
-	"\tschema_id\x18\x03 \x01(\x04R\bschemaId\"E\n" +
-	"\x0eTransactionGet\x123\n" +
-	"\x04gets\x18\x01 \x03(\v2\x13.stately.db.GetItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x10dR\x04gets\"\xe1\x01\n" +
+	"\tschema_id\x18\x03 \x01(\x04R\bschemaId\"C\n" +
+	"\x0eTransactionGet\x121\n" +
+	"\x04gets\x18\x01 \x03(\v2\x13.stately.db.GetItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04gets\"\xe1\x01\n" +
 	"\x14TransactionBeginList\x12.\n" +
 	"\x0fkey_path_prefix\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\rkeyPathPrefix\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\rR\x05limit\x12A\n" +
@@ -1114,13 +1113,11 @@ const file_db_transaction_proto_rawDesc = "" +
 	"\x17TransactionContinueList\x12%\n" +
 	"\n" +
 	"token_data\x18\x01 \x01(\fB\x06\xbaH\x03\xc8\x01\x01R\ttokenData\x12?\n" +
-	"\tdirection\x18\x04 \x01(\x0e2!.stately.db.ContinueListDirectionR\tdirection\"E\n" +
-	"\x0eTransactionPut\x123\n" +
-	"\x04puts\x18\x01 \x03(\v2\x13.stately.db.PutItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x102R\x04puts\"Q\n" +
-	"\x11TransactionDelete\x12<\n" +
-	"\adeletes\x18\x01 \x03(\v2\x16.stately.db.DeleteItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x102R\adeletes\"@\n" +
+	"\tdirection\x18\x04 \x01(\x0e2!.stately.db.ContinueListDirectionR\tdirection\"C\n" +
+	"\x0eTransactionPut\x121\n" +
+	"\x04puts\x18\x01 \x03(\v2\x13.stately.db.PutItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04puts\"O\n" +
+	"\x11TransactionDelete\x12:\n" +
+	"\adeletes\x18\x01 \x03(\v2\x16.stately.db.DeleteItemB\b\xbaH\x05\x92\x01\x02\b\x01R\adeletes\"@\n" +
 	"\x16TransactionGetResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.stately.db.ItemR\x05items\"D\n" +
 	"\vGeneratedID\x12\x14\n" +

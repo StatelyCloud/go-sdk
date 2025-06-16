@@ -27,7 +27,7 @@ type DeleteRequest struct {
 	// store_id is a globally unique Store ID, which can be looked up from the
 	// console or CLI.
 	StoreId uint64 `protobuf:"varint,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
-	// deletes is up to 50 items to be deleted from the Group.
+	// key paths of items to delete.
 	Deletes []*DeleteItem `protobuf:"bytes,3,rep,name=deletes,proto3" json:"deletes,omitempty"`
 	// schema_version_id refers to the item version to delete from.
 	//
@@ -243,11 +243,10 @@ var File_db_delete_proto protoreflect.FileDescriptor
 const file_db_delete_proto_rawDesc = "" +
 	"\n" +
 	"\x0fdb/delete.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\"\xc7\x01\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\"\xc5\x01\n" +
 	"\rDeleteRequest\x12!\n" +
-	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x12<\n" +
-	"\adeletes\x18\x03 \x03(\v2\x16.stately.db.DeleteItemB\n" +
-	"\xbaH\a\x92\x01\x04\b\x01\x102R\adeletes\x122\n" +
+	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x12:\n" +
+	"\adeletes\x18\x03 \x03(\v2\x16.stately.db.DeleteItemB\b\xbaH\x05\x92\x01\x02\b\x01R\adeletes\x122\n" +
 	"\x11schema_version_id\x18\x05 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +
 	"\tschema_id\x18\x06 \x01(\x04R\bschemaIdJ\x04\b\x04\x10\x05\"/\n" +
 	"\n" +
