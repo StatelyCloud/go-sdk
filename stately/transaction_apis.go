@@ -113,15 +113,22 @@ func (t *transaction) BeginList(prefix string, options ...ListOptions) (ListResp
 		opts.Merge(&opt)
 	}
 
+	keyConditions, err := opts.keyConditions()
+	if err != nil {
+		return nil, err
+	}
+
 	req := t.newTXNReq(&db.TransactionRequest_BeginList{
 		BeginList: &db.TransactionBeginList{
-			KeyPathPrefix: prefix,
-			Limit:         opts.Limit,
-			SortProperty:  db.SortableProperty(opts.SortableProperty),
-			SortDirection: db.SortDirection(opts.SortDirection),
+			KeyPathPrefix:    prefix,
+			Limit:            opts.Limit,
+			SortProperty:     db.SortableProperty(opts.SortableProperty),
+			SortDirection:    db.SortDirection(opts.SortDirection),
+			FilterConditions: opts.filters(),
+			KeyConditions:    keyConditions,
 		},
 	})
-	err := t.safeSend(req)
+	err = t.safeSend(req)
 	if err != nil {
 		return nil, err
 	}

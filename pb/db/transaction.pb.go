@@ -512,6 +512,39 @@ type TransactionBeginList struct {
 	// sort_direction is the direction to sort the results in. If this is not set,
 	// we will sort in ascending order.
 	SortDirection SortDirection `protobuf:"varint,4,opt,name=sort_direction,json=sortDirection,proto3,enum=stately.db.SortDirection" json:"sort_direction,omitempty"`
+	// filter_conditions are a set of conditions to filter the list result by.
+	// If no conditions are provided, all items in the store will be returned.
+	// Filter conditions are combined with OR.
+	FilterConditions []*FilterCondition `protobuf:"bytes,9,rep,name=filter_conditions,json=filterConditions,proto3" json:"filter_conditions,omitempty"`
+	// key_conditions are a set of conditions to apply to the list operation.
+	// Wherever possible, Stately will apply these key conditions at the DB layer
+	// to optimize the list operation cost.
+	//
+	// A maximum of two key conditions are allowed, one with a GREATER_THAN (or equal to)
+	// operator and one with a LESS_THAN (or equal to) operator. Together these amount to
+	// a "between" condition on the key path.
+	//
+	// If these conditions are provided they must share the same prefix as the
+	// key_path_prefix. For example this is valid:
+	//
+	//	key_path_prefix: "/group-:groupID/namespace"
+	//	key_conditions:
+	//	  - key_path: "/group-:groupID/namespace-44"
+	//	    operator: GREATER_THAN_OR_EQUAL
+	//	  - key_path: "/group-:groupID/namespace-100"
+	//	    operator: LESS_THAN_OR_EQUAL
+	//
+	// A key_path_prefix of "/group-:groupID" would also be valid above, as the prefix is shared
+	// with the key conditions.
+	//
+	// The following is NOT valid because the key_path_prefix does not
+	// share the same prefix as the key conditions:
+	//
+	//	key_path_prefix: "/group-:groupID/namespace"
+	//	key_conditions:
+	//	  - key_path: "/group-:groupID/beatles-1984"
+	//	    operator: GREATER_THAN_OR_EQUAL
+	KeyConditions []*KeyCondition `protobuf:"bytes,10,rep,name=key_conditions,json=keyConditions,proto3" json:"key_conditions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -572,6 +605,20 @@ func (x *TransactionBeginList) GetSortDirection() SortDirection {
 		return x.SortDirection
 	}
 	return SortDirection_SORT_ASCENDING
+}
+
+func (x *TransactionBeginList) GetFilterConditions() []*FilterCondition {
+	if x != nil {
+		return x.FilterConditions
+	}
+	return nil
+}
+
+func (x *TransactionBeginList) GetKeyConditions() []*KeyCondition {
+	if x != nil {
+		return x.KeyConditions
+	}
+	return nil
 }
 
 type TransactionContinueList struct {
@@ -1076,7 +1123,7 @@ var File_db_transaction_proto protoreflect.FileDescriptor
 const file_db_transaction_proto_rawDesc = "" +
 	"\n" +
 	"\x14db/transaction.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\x16db/continue_list.proto\x1a\x0fdb/delete.proto\x1a\fdb/get.proto\x1a\rdb/item.proto\x1a\x16db/item_property.proto\x1a\rdb/list.proto\x1a\fdb/put.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xae\x04\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\x16db/continue_list.proto\x1a\x0fdb/delete.proto\x1a\fdb/get.proto\x1a\rdb/item.proto\x1a\x16db/item_property.proto\x1a\rdb/list.proto\x1a\x15db/list_filters.proto\x1a\fdb/put.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xae\x04\n" +
 	"\x12TransactionRequest\x12%\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\tmessageId\x124\n" +
@@ -1104,12 +1151,16 @@ const file_db_transaction_proto_rawDesc = "" +
 	"\x11schema_version_id\x18\x02 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +
 	"\tschema_id\x18\x03 \x01(\x04R\bschemaId\"C\n" +
 	"\x0eTransactionGet\x121\n" +
-	"\x04gets\x18\x01 \x03(\v2\x13.stately.db.GetItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04gets\"\xe1\x01\n" +
+	"\x04gets\x18\x01 \x03(\v2\x13.stately.db.GetItemB\b\xbaH\x05\x92\x01\x02\b\x01R\x04gets\"\xf8\x02\n" +
 	"\x14TransactionBeginList\x12.\n" +
 	"\x0fkey_path_prefix\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\rkeyPathPrefix\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\rR\x05limit\x12A\n" +
 	"\rsort_property\x18\x03 \x01(\x0e2\x1c.stately.db.SortablePropertyR\fsortProperty\x12@\n" +
-	"\x0esort_direction\x18\x04 \x01(\x0e2\x19.stately.db.SortDirectionR\rsortDirection\"\x81\x01\n" +
+	"\x0esort_direction\x18\x04 \x01(\x0e2\x19.stately.db.SortDirectionR\rsortDirection\x12H\n" +
+	"\x11filter_conditions\x18\t \x03(\v2\x1b.stately.db.FilterConditionR\x10filterConditions\x12K\n" +
+	"\x0ekey_conditions\x18\n" +
+	" \x03(\v2\x18.stately.db.KeyConditionB\n" +
+	"\xbaH\a\x92\x01\x04\b\x00\x10\x02R\rkeyConditions\"\x81\x01\n" +
 	"\x17TransactionContinueList\x12%\n" +
 	"\n" +
 	"token_data\x18\x01 \x01(\fB\x06\xbaH\x03\xc8\x01\x01R\ttokenData\x12?\n" +
@@ -1170,13 +1221,15 @@ var file_db_transaction_proto_goTypes = []any{
 	(*GetItem)(nil),                 // 14: stately.db.GetItem
 	(SortableProperty)(0),           // 15: stately.db.SortableProperty
 	(SortDirection)(0),              // 16: stately.db.SortDirection
-	(ContinueListDirection)(0),      // 17: stately.db.ContinueListDirection
-	(*PutItem)(nil),                 // 18: stately.db.PutItem
-	(*DeleteItem)(nil),              // 19: stately.db.DeleteItem
-	(*Item)(nil),                    // 20: stately.db.Item
-	(*ListPartialResult)(nil),       // 21: stately.db.ListPartialResult
-	(*ListFinished)(nil),            // 22: stately.db.ListFinished
-	(*DeleteResult)(nil),            // 23: stately.db.DeleteResult
+	(*FilterCondition)(nil),         // 17: stately.db.FilterCondition
+	(*KeyCondition)(nil),            // 18: stately.db.KeyCondition
+	(ContinueListDirection)(0),      // 19: stately.db.ContinueListDirection
+	(*PutItem)(nil),                 // 20: stately.db.PutItem
+	(*DeleteItem)(nil),              // 21: stately.db.DeleteItem
+	(*Item)(nil),                    // 22: stately.db.Item
+	(*ListPartialResult)(nil),       // 23: stately.db.ListPartialResult
+	(*ListFinished)(nil),            // 24: stately.db.ListFinished
+	(*DeleteResult)(nil),            // 25: stately.db.DeleteResult
 }
 var file_db_transaction_proto_depIdxs = []int32{
 	2,  // 0: stately.db.TransactionRequest.begin:type_name -> stately.db.TransactionBegin
@@ -1194,20 +1247,22 @@ var file_db_transaction_proto_depIdxs = []int32{
 	14, // 12: stately.db.TransactionGet.gets:type_name -> stately.db.GetItem
 	15, // 13: stately.db.TransactionBeginList.sort_property:type_name -> stately.db.SortableProperty
 	16, // 14: stately.db.TransactionBeginList.sort_direction:type_name -> stately.db.SortDirection
-	17, // 15: stately.db.TransactionContinueList.direction:type_name -> stately.db.ContinueListDirection
-	18, // 16: stately.db.TransactionPut.puts:type_name -> stately.db.PutItem
-	19, // 17: stately.db.TransactionDelete.deletes:type_name -> stately.db.DeleteItem
-	20, // 18: stately.db.TransactionGetResponse.items:type_name -> stately.db.Item
-	9,  // 19: stately.db.TransactionPutAck.generated_ids:type_name -> stately.db.GeneratedID
-	21, // 20: stately.db.TransactionListResponse.result:type_name -> stately.db.ListPartialResult
-	22, // 21: stately.db.TransactionListResponse.finished:type_name -> stately.db.ListFinished
-	20, // 22: stately.db.TransactionFinished.put_results:type_name -> stately.db.Item
-	23, // 23: stately.db.TransactionFinished.delete_results:type_name -> stately.db.DeleteResult
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	17, // 15: stately.db.TransactionBeginList.filter_conditions:type_name -> stately.db.FilterCondition
+	18, // 16: stately.db.TransactionBeginList.key_conditions:type_name -> stately.db.KeyCondition
+	19, // 17: stately.db.TransactionContinueList.direction:type_name -> stately.db.ContinueListDirection
+	20, // 18: stately.db.TransactionPut.puts:type_name -> stately.db.PutItem
+	21, // 19: stately.db.TransactionDelete.deletes:type_name -> stately.db.DeleteItem
+	22, // 20: stately.db.TransactionGetResponse.items:type_name -> stately.db.Item
+	9,  // 21: stately.db.TransactionPutAck.generated_ids:type_name -> stately.db.GeneratedID
+	23, // 22: stately.db.TransactionListResponse.result:type_name -> stately.db.ListPartialResult
+	24, // 23: stately.db.TransactionListResponse.finished:type_name -> stately.db.ListFinished
+	22, // 24: stately.db.TransactionFinished.put_results:type_name -> stately.db.Item
+	25, // 25: stately.db.TransactionFinished.delete_results:type_name -> stately.db.DeleteResult
+	26, // [26:26] is the sub-list for method output_type
+	26, // [26:26] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_db_transaction_proto_init() }
@@ -1221,6 +1276,7 @@ func file_db_transaction_proto_init() {
 	file_db_item_proto_init()
 	file_db_item_property_proto_init()
 	file_db_list_proto_init()
+	file_db_list_filters_proto_init()
 	file_db_put_proto_init()
 	file_db_transaction_proto_msgTypes[0].OneofWrappers = []any{
 		(*TransactionRequest_Begin)(nil),

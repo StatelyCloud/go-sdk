@@ -170,33 +170,30 @@ type BeginListRequest struct {
 	// Wherever possible, Stately will apply these key conditions at the DB layer
 	// to optimize the list operation cost.
 	//
-	// A maximum of two key conditions are allowed, one with a GREATER_THAN (or equal to)
+	// A maximum of two key conditions are allowed: one with a GREATER_THAN (or equal to)
 	// operator and one with a LESS_THAN (or equal to) operator. Together these amount to
 	// a "between" condition on the key path.
 	//
 	// If these conditions are provided they must share the same prefix as the
-	// key_path_prefix. For example this is valid:
-	//
-	//	 key_path_prefix: "/group-:groupID/namespace"
-	//	 key_conditions: [
-	//	  {
-	//	      key_path: "/group-:groupID/namespace-44"
-	//	      operator: GREATER_THAN_OR_EQUAL
-	//	   },
-	//	  {
-	//	      key_path: "/group-:groupID/namespace-100"
-	//	      operator: LESS_THAN_OR_EQUAL
-	//	  }
-	//	],
-	//
-	// This is not valid, because the key conditions do not share the same prefix:
+	// key_path_prefix. For example, the following is valid:
 	//
 	//	key_path_prefix: "/group-:groupID/namespace"
-	//	key_conditions: [
-	//	  {
-	//	      key_path: "/group-:groupID/beatles-1984"
-	//	      operator: GREATER_THAN_OR_EQUAL
-	//	   }]
+	//	key_conditions:
+	//	  - key_path: "/group-:groupID/namespace-44"
+	//	    operator: GREATER_THAN_OR_EQUAL
+	//	  - key_path: "/group-:groupID/namespace-100"
+	//	    operator: LESS_THAN_OR_EQUAL
+	//
+	// A key_path_prefix of "/group-:groupID" would also be valid above, as the prefix is shared
+	// with the key conditions.
+	//
+	// The following is NOT valid because the key_path_prefix does not
+	// share the same prefix as the key conditions:
+	//
+	//	key_path_prefix: "/group-:groupID/namespace"
+	//	key_conditions:
+	//	  - key_path: "/group-:groupID/beatles-1984"
+	//	    operator: GREATER_THAN_OR_EQUAL
 	KeyConditions []*KeyCondition `protobuf:"bytes,10,rep,name=key_conditions,json=keyConditions,proto3" json:"key_conditions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

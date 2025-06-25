@@ -224,6 +224,20 @@ func (m *TransactionBeginList) CloneVT() *TransactionBeginList {
 	r.Limit = m.Limit
 	r.SortProperty = m.SortProperty
 	r.SortDirection = m.SortDirection
+	if rhs := m.FilterConditions; rhs != nil {
+		tmpContainer := make([]*FilterCondition, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v.CloneVT()
+		}
+		r.FilterConditions = tmpContainer
+	}
+	if rhs := m.KeyConditions; rhs != nil {
+		tmpContainer := make([]*KeyCondition, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v.CloneVT()
+		}
+		r.KeyConditions = tmpContainer
+	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -897,6 +911,40 @@ func (this *TransactionBeginList) EqualVT(that *TransactionBeginList) bool {
 	}
 	if this.SortDirection != that.SortDirection {
 		return false
+	}
+	if len(this.FilterConditions) != len(that.FilterConditions) {
+		return false
+	}
+	for i, vx := range this.FilterConditions {
+		vy := that.FilterConditions[i]
+		if p, q := vx, vy; p != q {
+			if p == nil {
+				p = &FilterCondition{}
+			}
+			if q == nil {
+				q = &FilterCondition{}
+			}
+			if !p.EqualVT(q) {
+				return false
+			}
+		}
+	}
+	if len(this.KeyConditions) != len(that.KeyConditions) {
+		return false
+	}
+	for i, vx := range this.KeyConditions {
+		vy := that.KeyConditions[i]
+		if p, q := vx, vy; p != q {
+			if p == nil {
+				p = &KeyCondition{}
+			}
+			if q == nil {
+				q = &KeyCondition{}
+			}
+			if !p.EqualVT(q) {
+				return false
+			}
+		}
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
@@ -1700,6 +1748,30 @@ func (m *TransactionBeginList) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if len(m.KeyConditions) > 0 {
+		for iNdEx := len(m.KeyConditions) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.KeyConditions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x52
+		}
+	}
+	if len(m.FilterConditions) > 0 {
+		for iNdEx := len(m.FilterConditions) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.FilterConditions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
 	if m.SortDirection != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SortDirection))
 		i--
@@ -2394,6 +2466,18 @@ func (m *TransactionBeginList) SizeVT() (n int) {
 	}
 	if m.SortDirection != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortDirection))
+	}
+	if len(m.FilterConditions) > 0 {
+		for _, e := range m.FilterConditions {
+			l = e.SizeVT()
+			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+		}
+	}
+	if len(m.KeyConditions) > 0 {
+		for _, e := range m.KeyConditions {
+			l = e.SizeVT()
+			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+		}
 	}
 	n += len(m.unknownFields)
 	return n
@@ -3517,6 +3601,74 @@ func (m *TransactionBeginList) UnmarshalVT(dAtA []byte) error {
 					break
 				}
 			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FilterConditions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FilterConditions = append(m.FilterConditions, &FilterCondition{})
+			if err := m.FilterConditions[len(m.FilterConditions)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyConditions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.KeyConditions = append(m.KeyConditions, &KeyCondition{})
+			if err := m.KeyConditions[len(m.KeyConditions)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

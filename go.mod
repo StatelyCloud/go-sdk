@@ -10,7 +10,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476
+	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/net v0.41.0
 	golang.org/x/sync v0.15.0
 	google.golang.org/protobuf v1.36.6

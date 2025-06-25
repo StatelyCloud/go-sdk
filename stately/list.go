@@ -3,10 +3,12 @@ package stately
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"connectrpc.com/connect"
 
 	"github.com/StatelyCloud/go-sdk/pb/db"
+	"github.com/StatelyCloud/go-sdk/sdkerror"
 )
 
 // ListOptions are optional parameters for List.
@@ -14,10 +16,89 @@ type ListOptions struct {
 	// Limit is the maximum number of items to return. The default is unlimited -
 	// all items will be returned.
 	Limit uint32
+
 	// SortableProperty is the property to sort by. Default is SortByKeyPath.
 	SortableProperty SortableProperty
+
 	// SortDirection is the direction to sort by. Default is Ascending.
 	SortDirection SortDirection
+
+	// ItemTypes are a list of item types to include in the result set.
+	// If not provided, all item types will be returned.
+	ItemTypes []string
+
+	// KeyConditions are additional constraints to apply to the list operation
+	// to limit the scope of items to return.
+	//
+	// At most two KeyConditions can be provided:
+	// - one GreaterThan (or GreaterThanOrEqualTo) condition
+	// - one LessThan (or LessThanOrEqualTo) condition
+	KeyConditions []KeyCondition
+}
+
+// WithKeyGreaterThan adds a KeyCondition to the ListOptions that restricts the result set
+// to items with keys greater than the specified keyPath.
+func (lo ListOptions) WithKeyGreaterThan(keyPath string) ListOptions {
+	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
+		KeyPath:  keyPath,
+		Operator: GreaterThan,
+	})
+	return lo
+}
+
+// WithKeyGreaterThanOrEqualTo adds a KeyCondition to the ListOptions that restricts the result set
+// to items with keys greater than or equal to the specified keyPath.
+func (lo ListOptions) WithKeyGreaterThanOrEqualTo(keyPath string) ListOptions {
+	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
+		KeyPath:  keyPath,
+		Operator: GreaterThanOrEqualTo,
+	})
+	return lo
+}
+
+// WithKeyLessThan adds a KeyCondition to the ListOptions that restricts the result set
+// to items with keys less than the specified keyPath.
+func (lo ListOptions) WithKeyLessThan(keyPath string) ListOptions {
+	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
+		KeyPath:  keyPath,
+		Operator: LessThan,
+	})
+	return lo
+}
+
+// WithKeyLessThanOrEqualTo adds a KeyCondition to the ListOptions that restricts the result set
+// to items with keys less than or equal to the specified keyPath.
+func (lo ListOptions) WithKeyLessThanOrEqualTo(keyPath string) ListOptions {
+	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
+		KeyPath:  keyPath,
+		Operator: LessThanOrEqualTo,
+	})
+	return lo
+}
+
+// WithItemTypeFilter adds ItemType filters to the ListOptions.
+func (lo ListOptions) WithItemTypeFilter(itemTypes ...string) ListOptions {
+	lo.ItemTypes = append(lo.ItemTypes, itemTypes...)
+	return lo
+}
+
+// WithLimit sets the maximum number of items to return in the ListOptions.
+// Note: If no limit is set (or limit is zero) all items will be returned.
+func (lo ListOptions) WithLimit(limit uint32) ListOptions {
+	lo.Limit = limit
+	return lo
+}
+
+// WithSortableProperty sets the property to sort by in the ListOptions.
+func (lo ListOptions) WithSortableProperty(sortable SortableProperty) ListOptions {
+	lo.SortableProperty = sortable
+	return lo
+}
+
+// WithSortDirection sets the direction to sort by in the ListOptions.
+func (lo ListOptions) WithSortDirection(direction SortDirection) ListOptions {
+	lo.SortDirection = direction
+	return lo
 }
 
 // Merge combines two ListOptions into one. "other" takes precedence over "this".
@@ -32,7 +113,41 @@ func (lo *ListOptions) Merge(other *ListOptions) *ListOptions {
 	lo.Limit = other.Limit
 	lo.SortableProperty = other.SortableProperty
 	lo.SortDirection = other.SortDirection
+	lo.ItemTypes = other.ItemTypes
+	lo.KeyConditions = other.KeyConditions
 	return lo
+}
+
+func (lo *ListOptions) filters() []*db.FilterCondition {
+	if len(lo.ItemTypes) == 0 {
+		return nil
+	}
+	filters := make([]*db.FilterCondition, len(lo.ItemTypes))
+	for i, itemType := range lo.ItemTypes {
+		filters[i] = &db.FilterCondition{
+			Value: &db.FilterCondition_ItemType{
+				ItemType: itemType,
+			},
+		}
+	}
+	return filters
+}
+
+func (lo *ListOptions) keyConditions() ([]*db.KeyCondition, error) {
+	if len(lo.KeyConditions) == 0 {
+		return nil, nil
+	}
+
+	result := make([]*db.KeyCondition, len(lo.KeyConditions))
+	var err error
+	for i, cond := range lo.KeyConditions {
+		result[i], err = cond.toProto()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
 
 // ContinueOptions are optional parameters for Continue.
@@ -60,6 +175,94 @@ const (
 	// Descending is the reverse sort direction.
 	Descending
 )
+
+// KeyConditionOperator defines the operator to use for key conditions.
+type KeyConditionOperator int32
+
+const (
+	// GreaterThan specifies that a key must be greater than the specified value to be
+	// included in the result set.
+	// In ascending order, this can also be thought of as a "start" condition.
+	// In descending order, this can be thought of as an "end" condition.
+	GreaterThan KeyConditionOperator = iota + 1
+
+	// GreaterThanOrEqualTo specifies that a key must be greater than or equal to the
+	// specified value to be included in the result set.
+	// In ascending order, this can also be thought of as a "start" condition.
+	// In descending order, this can be thought of as an "end" condition.
+	GreaterThanOrEqualTo
+
+	// LessThan specifies that a key must be less than the specified value to be
+	// included in the result set.
+	// In ascending order, this can also be thought of as an "end" condition.
+	// In descending order, this can be thought of as a "start" condition.
+	LessThan
+
+	// LessThanOrEqualTo specifies that a key must be less than or equal to the
+	// specified value to be included in the result set.
+	// In ascending order, this can also be thought of as an "end" condition.
+	// In descending order, this can be thought of as a "start" condition.
+	LessThanOrEqualTo
+)
+
+// A KeyCondition is an additional constraint to apply to a list operation to limit
+// the scope of items to return.
+// Stately applies these conditions at the DB layer to optimize the list operation
+// latency and cost.
+type KeyCondition struct {
+	// KeyPath is a valid key prefix (or full key) used to filter or optimize the
+	// list operation based on the operator below.
+	//
+	// Note: When using KeyConditions and KeyPrefixes together, KeyCondition KeyPaths must
+	// share the same prefix. For example a KeyCondition:
+	//
+	//	{ Operator: GreaterThan KeyPath: "/group-MY_GROUP_ID/category-10/item-10" }
+	//
+	// Can be used with any of the key prefixes:
+	// - /group-MY_GROUP_ID
+	// - /group-MY_GROUP_ID/category
+	// - /group-MY_GROUP_ID/category-10
+	// - /group-MY_GROUP_ID/category-10/item
+	//
+	// But cannot be used with the key prefixes:
+	// - /group-MY_GROUP_ID/category-11
+	// - /group-MY_GROUP_ID/otherSubgroup
+	KeyPath string
+
+	// Operator specifies how to apply a KeyPath condition to the list operation.
+	// Valid operators are:
+	// - GreaterThan: Items returned must have a key greater than the key path above.
+	// - GreaterThanOrEqualTo: Items returned must have a key greater than or equal to the key path above.
+	// - LessThan: Items returned must have a key less than the key path above.
+	// - LessThanOrEqualTo: Items returned must have a key less than or equal to the key path above.
+	Operator KeyConditionOperator
+}
+
+func (kc KeyCondition) toProto() (*db.KeyCondition, error) {
+	result := &db.KeyCondition{
+		KeyPath: kc.KeyPath,
+	}
+
+	switch kc.Operator {
+	case GreaterThan:
+		result.Operator = db.Operator_OPERATOR_GREATER_THAN
+	case GreaterThanOrEqualTo:
+		result.Operator = db.Operator_OPERATOR_GREATER_THAN_OR_EQUAL
+	case LessThan:
+		result.Operator = db.Operator_OPERATOR_LESS_THAN
+	case LessThanOrEqualTo:
+		result.Operator = db.Operator_OPERATOR_LESS_THAN_OR_EQUAL
+	default:
+		return nil, &sdkerror.Error{
+			Code:        connect.CodeInvalidArgument,
+			StatelyCode: "InvalidKeyConditionOperator",
+			Message:     fmt.Sprintf("invalid key condition operator: %d", kc.Operator),
+			CauseErr:    nil,
+		}
+	}
+
+	return result, nil
+}
 
 // ListToken is a stateless token that saves your place in a result set,
 // allowing you to fetch additional results with ContinueList, or get updated
@@ -196,14 +399,21 @@ func (c *client) BeginList(
 		options = options.Merge(&opt)
 	}
 
+	keyConditions, err := options.keyConditions()
+	if err != nil {
+		return nil, err
+	}
+
 	response, err := c.client.BeginList(ctx, connect.NewRequest(&db.BeginListRequest{
-		StoreId:         uint64(c.storeID),
-		SchemaVersionId: uint32(c.schemaVersionID),
-		KeyPathPrefix:   keyPath,
-		AllowStale:      c.allowStale,
-		Limit:           options.Limit,
-		SortProperty:    db.SortableProperty(options.SortableProperty),
-		SortDirection:   db.SortDirection(options.SortDirection),
+		StoreId:          uint64(c.storeID),
+		SchemaVersionId:  uint32(c.schemaVersionID),
+		KeyPathPrefix:    keyPath,
+		AllowStale:       c.allowStale,
+		Limit:            options.Limit,
+		SortProperty:     db.SortableProperty(options.SortableProperty),
+		SortDirection:    db.SortDirection(options.SortDirection),
+		FilterConditions: options.filters(),
+		KeyConditions:    keyConditions,
 	}))
 	if err != nil {
 		return nil, err
