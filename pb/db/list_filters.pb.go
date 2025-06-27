@@ -27,6 +27,7 @@ type FilterCondition struct {
 	// Types that are valid to be assigned to Value:
 	//
 	//	*FilterCondition_ItemType
+	//	*FilterCondition_CelExpression
 	Value         isFilterCondition_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -78,26 +79,111 @@ func (x *FilterCondition) GetItemType() string {
 	return ""
 }
 
+func (x *FilterCondition) GetCelExpression() *CelExpression {
+	if x != nil {
+		if x, ok := x.Value.(*FilterCondition_CelExpression); ok {
+			return x.CelExpression
+		}
+	}
+	return nil
+}
+
 type isFilterCondition_Value interface {
 	isFilterCondition_Value()
 }
 
 type FilterCondition_ItemType struct {
-	// item_type is the type of item to filter by.
+	// item_type is the type of item to include in a query response.
 	ItemType string `protobuf:"bytes,1,opt,name=item_type,json=itemType,proto3,oneof"`
 }
 
+type FilterCondition_CelExpression struct {
+	// cel_expression is a CEL expression to evaluate against a specific item type.
+	// If an expression evaluates to true, the item is included in the results.
+	// This expression *only* applies to the item type specified in the
+	// CelExpression.item_type field, and is not applied to other item types in the query.
+	CelExpression *CelExpression `protobuf:"bytes,2,opt,name=cel_expression,json=celExpression,proto3,oneof"`
+}
+
 func (*FilterCondition_ItemType) isFilterCondition_Value() {}
+
+func (*FilterCondition_CelExpression) isFilterCondition_Value() {}
+
+type CelExpression struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// item_type is the itemType to evaluate the expression against.
+	ItemType string `protobuf:"bytes,1,opt,name=item_type,json=itemType,proto3" json:"item_type,omitempty"`
+	// expression is the CEL expression to evaluate.
+	// If the expression evaluates to true, the item is included in the results,
+	// otherwise it is excluded.
+	//
+	// In the context of the CEL expression, 'this' refers to the item being evaluated.
+	// For example, the expression is "this.foo == 'bar'" means that the item
+	// must have a property 'foo' with the value 'bar' to be included in the results.
+	Expression    string `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CelExpression) Reset() {
+	*x = CelExpression{}
+	mi := &file_db_list_filters_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CelExpression) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CelExpression) ProtoMessage() {}
+
+func (x *CelExpression) ProtoReflect() protoreflect.Message {
+	mi := &file_db_list_filters_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CelExpression.ProtoReflect.Descriptor instead.
+func (*CelExpression) Descriptor() ([]byte, []int) {
+	return file_db_list_filters_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CelExpression) GetItemType() string {
+	if x != nil {
+		return x.ItemType
+	}
+	return ""
+}
+
+func (x *CelExpression) GetExpression() string {
+	if x != nil {
+		return x.Expression
+	}
+	return ""
+}
 
 var File_db_list_filters_proto protoreflect.FileDescriptor
 
 const file_db_list_filters_proto_rawDesc = "" +
 	"\n" +
 	"\x15db/list_filters.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\"@\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\"\x84\x01\n" +
 	"\x0fFilterCondition\x12\x1d\n" +
-	"\titem_type\x18\x01 \x01(\tH\x00R\bitemTypeB\x0e\n" +
-	"\x05value\x12\x05\xbaH\x02\b\x01B\x91\x01\n" +
+	"\titem_type\x18\x01 \x01(\tH\x00R\bitemType\x12B\n" +
+	"\x0ecel_expression\x18\x02 \x01(\v2\x19.stately.db.CelExpressionH\x00R\rcelExpressionB\x0e\n" +
+	"\x05value\x12\x05\xbaH\x02\b\x01\"\\\n" +
+	"\rCelExpression\x12#\n" +
+	"\titem_type\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\bitemType\x12&\n" +
+	"\n" +
+	"expression\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
+	"expressionB\x91\x01\n" +
 	"\x0ecom.stately.dbB\x10ListFiltersProtoP\x01Z$github.com/StatelyCloud/go-sdk/pb/db\xa2\x02\x03SDX\xaa\x02\n" +
 	"Stately.Db\xca\x02\n" +
 	"Stately\\Db\xe2\x02\x16Stately\\Db\\GPBMetadata\xea\x02\vStately::Dbb\x06proto3"
@@ -114,16 +200,18 @@ func file_db_list_filters_proto_rawDescGZIP() []byte {
 	return file_db_list_filters_proto_rawDescData
 }
 
-var file_db_list_filters_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_db_list_filters_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_db_list_filters_proto_goTypes = []any{
 	(*FilterCondition)(nil), // 0: stately.db.FilterCondition
+	(*CelExpression)(nil),   // 1: stately.db.CelExpression
 }
 var file_db_list_filters_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: stately.db.FilterCondition.cel_expression:type_name -> stately.db.CelExpression
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_db_list_filters_proto_init() }
@@ -133,6 +221,7 @@ func file_db_list_filters_proto_init() {
 	}
 	file_db_list_filters_proto_msgTypes[0].OneofWrappers = []any{
 		(*FilterCondition_ItemType)(nil),
+		(*FilterCondition_CelExpression)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -140,7 +229,7 @@ func file_db_list_filters_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_db_list_filters_proto_rawDesc), len(file_db_list_filters_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

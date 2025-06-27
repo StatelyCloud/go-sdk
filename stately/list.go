@@ -34,6 +34,13 @@ type ListOptions struct {
 	// - one GreaterThan (or GreaterThanOrEqualTo) condition
 	// - one LessThan (or LessThanOrEqualTo) condition
 	KeyConditions []KeyCondition
+
+	// CelExpressionFilters are CEL expression filters to apply to the result set.
+	// Each expression is evaluated on an item type basis, so you can have multiple
+	// expressions for different item types, and the existence of a filter for one
+	// item type does not mean that other item types are excluded from the result set.
+	// To ensure that ONLY specific item types are returned, use the ItemTypes field above.
+	CelExpressionFilters []CelExpressionFilter
 }
 
 // WithKeyGreaterThan adds a KeyCondition to the ListOptions that restricts the result set
@@ -76,9 +83,18 @@ func (lo ListOptions) WithKeyLessThanOrEqualTo(keyPath string) ListOptions {
 	return lo
 }
 
-// WithItemTypeFilter adds ItemType filters to the ListOptions.
-func (lo ListOptions) WithItemTypeFilter(itemTypes ...string) ListOptions {
+// WithItemTypesToInclude adds ItemType filters to the ListOptions.
+func (lo ListOptions) WithItemTypesToInclude(itemTypes ...string) ListOptions {
 	lo.ItemTypes = append(lo.ItemTypes, itemTypes...)
+	return lo
+}
+
+// WithCelExpressionFilter adds a CEL expression filter to the ListOptions.
+func (lo ListOptions) WithCelExpressionFilter(itemType, expression string) ListOptions {
+	lo.CelExpressionFilters = append(lo.CelExpressionFilters, CelExpressionFilter{
+		ItemType:   itemType,
+		Expression: expression,
+	})
 	return lo
 }
 
@@ -115,18 +131,26 @@ func (lo *ListOptions) Merge(other *ListOptions) *ListOptions {
 	lo.SortDirection = other.SortDirection
 	lo.ItemTypes = other.ItemTypes
 	lo.KeyConditions = other.KeyConditions
+	lo.CelExpressionFilters = other.CelExpressionFilters
 	return lo
 }
 
 func (lo *ListOptions) filters() []*db.FilterCondition {
-	if len(lo.ItemTypes) == 0 {
+	if len(lo.ItemTypes) == 0 && len(lo.CelExpressionFilters) == 0 {
 		return nil
 	}
-	filters := make([]*db.FilterCondition, len(lo.ItemTypes))
+	filters := make([]*db.FilterCondition, len(lo.ItemTypes)+len(lo.CelExpressionFilters))
 	for i, itemType := range lo.ItemTypes {
 		filters[i] = &db.FilterCondition{
 			Value: &db.FilterCondition_ItemType{
 				ItemType: itemType,
+			},
+		}
+	}
+	for i, filter := range lo.CelExpressionFilters {
+		filters[len(lo.ItemTypes)+i] = &db.FilterCondition{
+			Value: &db.FilterCondition_CelExpression{
+				CelExpression: filter.toProto(),
 			},
 		}
 	}
@@ -262,6 +286,59 @@ func (kc KeyCondition) toProto() (*db.KeyCondition, error) {
 	}
 
 	return result, nil
+}
+
+type CelExpressionFilter struct {
+	// ItemType is the ItemType the filter applies to.
+	// Note: This filter has no effect on other ItemTypes that may be listed over; they
+	// will still be included in the results unless other filters are applied to them.
+	ItemType string
+
+	// Expression is the CEL expression to evaluate for the ItemType above.
+	// If the expression evaluates to true, the item is included in the results,
+	// otherwise it is excluded.
+	//
+	// In the context of the CEL expression, 'this' refers to the item being evaluated,
+	// and properties should be accessed by the names are as they appear in schema
+	// (this is also the json field name which can be found in the json tags of
+	// the generated schema) not in generated code name. For example, the following
+	// item type defined in schema:
+	//
+	// 	itemType("Person", {
+	// 	 keyPath: "/Person-:id",
+	// 	 fields: {
+	// 	   id: { type: uuid, initialValue: "uuid" },
+	// 	   full_name: { type: string },
+	// 	   age: { type: int, required: false },
+	// 	   email: { type: string, required: false },
+	// 	 }
+	// 	})
+	//
+	// in generated code looks like:
+	//
+	// 	type Person struct {
+	//		Id uuid.UUID `protobuf:"bytes,1" json:"id,omitempty"`
+	//		FullName string `protobuf:"bytes,2" json:"full_name,omitempty"`
+	//		Age int64 `protobuf:"zigzag64,3" json:"age,omitempty,string"`
+	//		Email string `protobuf:"bytes,4" json:"email,omitempty"`
+	// 	}
+	//
+	// So, we could build a CEL expression like:
+	//
+	// 	this.full_name.contains('John') && this.age > 30 && !has(this.email)
+	//
+	// This will include all Person items where the full_name contains 'John'
+	// and the age is greater than 30, and the email field is absent.
+	// For more about CEL expressions, see the CEL documentation:
+	// https://github.com/google/cel-spec/blob/master/doc/langdef.md
+	Expression string
+}
+
+func (cef CelExpressionFilter) toProto() *db.CelExpression {
+	return &db.CelExpression{
+		ItemType:   cef.ItemType,
+		Expression: cef.Expression,
+	}
 }
 
 // ListToken is a stateless token that saves your place in a result set,
