@@ -27,10 +27,10 @@ type BeginScanRequest struct {
 	// store_id is a globally unique Store ID, which can be looked up from the
 	// console or CLI.
 	StoreId uint64 `protobuf:"varint,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
-	// filter_condition is a set of conditions to filter the scan result by.
+	// filter_conditions is a set of conditions to filter the scan result by.
 	// If no conditions are provided, all items in the store will be returned.
 	// Filter conditions are combined with OR.
-	FilterCondition []*FilterCondition `protobuf:"bytes,2,rep,name=filter_condition,json=filterCondition,proto3" json:"filter_condition,omitempty"`
+	FilterConditions []*FilterCondition `protobuf:"bytes,2,rep,name=filter_conditions,json=filterConditions,proto3" json:"filter_conditions,omitempty"`
 	// limit is the maximum number of items to return. If this is not specified or
 	// set to 0, it will return one server side page of items, which may contain zero of your selected
 	// item types and hence be an empty response.
@@ -95,9 +95,9 @@ func (x *BeginScanRequest) GetStoreId() uint64 {
 	return 0
 }
 
-func (x *BeginScanRequest) GetFilterCondition() []*FilterCondition {
+func (x *BeginScanRequest) GetFilterConditions() []*FilterCondition {
 	if x != nil {
-		return x.FilterCondition
+		return x.FilterConditions
 	}
 	return nil
 }
@@ -195,10 +195,10 @@ var File_db_scan_proto protoreflect.FileDescriptor
 const file_db_scan_proto_rawDesc = "" +
 	"\n" +
 	"\rdb/scan.proto\x12\n" +
-	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\x15db/list_filters.proto\"\xb5\x02\n" +
+	"stately.db\x1a\x1bbuf/validate/validate.proto\x1a\x15db/list_filters.proto\"\xb7\x02\n" +
 	"\x10BeginScanRequest\x12!\n" +
-	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x12F\n" +
-	"\x10filter_condition\x18\x02 \x03(\v2\x1b.stately.db.FilterConditionR\x0ffilterCondition\x12\x14\n" +
+	"\bstore_id\x18\x01 \x01(\x04B\x06\xbaH\x03\xc8\x01\x01R\astoreId\x12H\n" +
+	"\x11filter_conditions\x18\x02 \x03(\v2\x1b.stately.db.FilterConditionR\x10filterConditions\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\rR\x05limit\x12O\n" +
 	"\x13segmentation_params\x18\x04 \x01(\v2\x1e.stately.db.SegmentationParamsR\x12segmentationParams\x122\n" +
 	"\x11schema_version_id\x18\x05 \x01(\rB\x06\xbaH\x03\xc8\x01\x01R\x0fschemaVersionId\x12\x1b\n" +
@@ -230,7 +230,7 @@ var file_db_scan_proto_goTypes = []any{
 	(*FilterCondition)(nil),    // 2: stately.db.FilterCondition
 }
 var file_db_scan_proto_depIdxs = []int32{
-	2, // 0: stately.db.BeginScanRequest.filter_condition:type_name -> stately.db.FilterCondition
+	2, // 0: stately.db.BeginScanRequest.filter_conditions:type_name -> stately.db.FilterCondition
 	1, // 1: stately.db.BeginScanRequest.segmentation_params:type_name -> stately.db.SegmentationParams
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type

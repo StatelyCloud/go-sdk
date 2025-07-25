@@ -59,9 +59,9 @@ func (c *client) BeginScan(
 		options = options.Merge(&opt)
 	}
 
-	filterCondition := make([]*db.FilterCondition, len(options.ItemTypes))
+	filterConditions := make([]*db.FilterCondition, len(options.ItemTypes))
 	for i, itemType := range options.ItemTypes {
-		filterCondition[i] = &db.FilterCondition{
+		filterConditions[i] = &db.FilterCondition{
 			Value: &db.FilterCondition_ItemType{
 				ItemType: itemType,
 			},
@@ -79,7 +79,7 @@ func (c *client) BeginScan(
 		StoreId:            uint64(c.storeID),
 		SegmentationParams: segmentationParams,
 		SchemaVersionId:    uint32(c.schemaVersionID),
-		FilterCondition:    filterCondition,
+		FilterConditions:   filterConditions,
 		Limit:              options.Limit,
 	}))
 	if err != nil {

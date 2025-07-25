@@ -29,12 +29,12 @@ func (m *BeginScanRequest) CloneVT() *BeginScanRequest {
 	r.SegmentationParams = m.SegmentationParams.CloneVT()
 	r.SchemaVersionId = m.SchemaVersionId
 	r.SchemaId = m.SchemaId
-	if rhs := m.FilterCondition; rhs != nil {
+	if rhs := m.FilterConditions; rhs != nil {
 		tmpContainer := make([]*FilterCondition, len(rhs))
 		for k, v := range rhs {
 			tmpContainer[k] = v.CloneVT()
 		}
-		r.FilterCondition = tmpContainer
+		r.FilterConditions = tmpContainer
 	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
@@ -74,11 +74,11 @@ func (this *BeginScanRequest) EqualVT(that *BeginScanRequest) bool {
 	if this.StoreId != that.StoreId {
 		return false
 	}
-	if len(this.FilterCondition) != len(that.FilterCondition) {
+	if len(this.FilterConditions) != len(that.FilterConditions) {
 		return false
 	}
-	for i, vx := range this.FilterCondition {
-		vy := that.FilterCondition[i]
+	for i, vx := range this.FilterConditions {
+		vy := that.FilterConditions[i]
 		if p, q := vx, vy; p != q {
 			if p == nil {
 				p = &FilterCondition{}
@@ -190,9 +190,9 @@ func (m *BeginScanRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if len(m.FilterCondition) > 0 {
-		for iNdEx := len(m.FilterCondition) - 1; iNdEx >= 0; iNdEx-- {
-			size, err := m.FilterCondition[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+	if len(m.FilterConditions) > 0 {
+		for iNdEx := len(m.FilterConditions) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.FilterConditions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -262,8 +262,8 @@ func (m *BeginScanRequest) SizeVT() (n int) {
 	if m.StoreId != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.StoreId))
 	}
-	if len(m.FilterCondition) > 0 {
-		for _, e := range m.FilterCondition {
+	if len(m.FilterConditions) > 0 {
+		for _, e := range m.FilterConditions {
 			l = e.SizeVT()
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
@@ -351,7 +351,7 @@ func (m *BeginScanRequest) UnmarshalVT(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FilterCondition", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field FilterConditions", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -378,8 +378,8 @@ func (m *BeginScanRequest) UnmarshalVT(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FilterCondition = append(m.FilterCondition, &FilterCondition{})
-			if err := m.FilterCondition[len(m.FilterCondition)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+			m.FilterConditions = append(m.FilterConditions, &FilterCondition{})
+			if err := m.FilterConditions[len(m.FilterConditions)-1].UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -46,6 +46,9 @@ type ListOptions struct {
 // WithKeyGreaterThan adds a KeyCondition to the ListOptions that restricts the result set
 // to items with keys greater than the specified keyPath.
 func (lo ListOptions) WithKeyGreaterThan(keyPath string) ListOptions {
+	if keyPath == "" {
+		return lo // noop on empty keyPath
+	}
 	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
 		KeyPath:  keyPath,
 		Operator: GreaterThan,
@@ -56,6 +59,9 @@ func (lo ListOptions) WithKeyGreaterThan(keyPath string) ListOptions {
 // WithKeyGreaterThanOrEqualTo adds a KeyCondition to the ListOptions that restricts the result set
 // to items with keys greater than or equal to the specified keyPath.
 func (lo ListOptions) WithKeyGreaterThanOrEqualTo(keyPath string) ListOptions {
+	if keyPath == "" {
+		return lo // noop on empty keyPath
+	}
 	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
 		KeyPath:  keyPath,
 		Operator: GreaterThanOrEqualTo,
@@ -66,6 +72,9 @@ func (lo ListOptions) WithKeyGreaterThanOrEqualTo(keyPath string) ListOptions {
 // WithKeyLessThan adds a KeyCondition to the ListOptions that restricts the result set
 // to items with keys less than the specified keyPath.
 func (lo ListOptions) WithKeyLessThan(keyPath string) ListOptions {
+	if keyPath == "" {
+		return lo // noop on empty keyPath
+	}
 	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
 		KeyPath:  keyPath,
 		Operator: LessThan,
@@ -76,6 +85,9 @@ func (lo ListOptions) WithKeyLessThan(keyPath string) ListOptions {
 // WithKeyLessThanOrEqualTo adds a KeyCondition to the ListOptions that restricts the result set
 // to items with keys less than or equal to the specified keyPath.
 func (lo ListOptions) WithKeyLessThanOrEqualTo(keyPath string) ListOptions {
+	if keyPath == "" {
+		return lo // noop on empty keyPath
+	}
 	lo.KeyConditions = append(lo.KeyConditions, KeyCondition{
 		KeyPath:  keyPath,
 		Operator: LessThanOrEqualTo,
