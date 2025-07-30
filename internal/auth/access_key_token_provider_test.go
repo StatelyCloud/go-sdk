@@ -65,8 +65,9 @@ func makeTestServer(testServer *testAuthServer) *httptest.Server {
 func makeTransport() *http2.Transport {
 	return &http2.Transport{
 		AllowHTTP: true,
-		DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
+		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+			dialer := &net.Dialer{}
+			return dialer.DialContext(ctx, network, addr)
 		},
 	}
 }

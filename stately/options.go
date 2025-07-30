@@ -168,8 +168,12 @@ func createTransport(endpoint string) *http2.Transport {
 		// Disable compression locally
 		http2Transport.DisableCompression = isLocalEndpoint(endpoint)
 		http2Transport.AllowHTTP = true
-		http2Transport.DialTLSContext = func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
+		http2Transport.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (
+			net.Conn,
+			error,
+		) {
+			dialer := &net.Dialer{}
+			return dialer.DialContext(ctx, network, addr)
 		}
 	}
 	return http2Transport
