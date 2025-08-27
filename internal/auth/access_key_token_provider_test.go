@@ -74,8 +74,7 @@ func makeTransport() *http2.Transport {
 
 func TestAccessKeyGetToken(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	svr := makeTestServer(&testAuthServer{})
 	defer svr.Close()
 
@@ -102,8 +101,7 @@ func TestAccessKeyConcurrentRefresh(t *testing.T) {
 	t.Parallel()
 	count := atomic.Uint64{}
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	testServer := &testAuthServer{
 		tokenFunc: func() (string, error) {
 			token := strconv.Itoa(int(count.Load()))
@@ -137,8 +135,7 @@ func TestAccessKeyConcurrentRefresh(t *testing.T) {
 
 func TestAccessKeyBackgroundRefresh(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
@@ -197,8 +194,7 @@ func TestAccessKeyRefreshContextCancelled(t *testing.T) {
 func TestAccessKeyTransientNetworkError(t *testing.T) {
 	t.Parallel()
 	count := atomic.Int32{}
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	testServer := &testAuthServer{
 		tokenFunc: func() (string, error) {
 			defer count.Add(1)
@@ -230,8 +226,7 @@ func TestAccessKeyTransientNetworkError(t *testing.T) {
 func TestAccessKeyPermanentNetworkError(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	testServer := &testAuthServer{
 		tokenFunc: func() (string, error) {
 			return "", connect.NewError(connect.CodeInternal, fmt.Errorf("something bad happened"))
@@ -256,8 +251,7 @@ func TestAccessKeyPermanentNetworkError(t *testing.T) {
 func TestAccessKeyForceOverridesExpiry(t *testing.T) {
 	t.Parallel()
 	count := atomic.Uint64{}
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	testServer := &testAuthServer{
 		tokenFunc: func() (string, error) {
 			token := strconv.Itoa(int(count.Load()))
@@ -299,8 +293,7 @@ func TestAccessKeyForceIsBlocking(t *testing.T) {
 	t.Parallel()
 	count := atomic.Uint64{}
 	delaySecs := atomic.Uint64{}
-	ctx, cancel := context.WithCancel(context.TODO())
-	t.Cleanup(cancel)
+	ctx := t.Context()
 	testServer := &testAuthServer{
 		tokenFunc: func() (string, error) {
 			time.Sleep(time.Second * time.Duration(delaySecs.Load()))
@@ -379,8 +372,7 @@ func TestAccessKeyNonRetryableErrorCodes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			count := atomic.Uint64{}
-			ctx, cancel := context.WithCancel(context.TODO())
-			t.Cleanup(cancel)
+			ctx := t.Context()
 			testServer := &testAuthServer{
 				tokenFunc: func() (string, error) {
 					count.Add(1)

@@ -222,7 +222,6 @@ func (m *TransactionBeginList) CloneVT() *TransactionBeginList {
 	r := new(TransactionBeginList)
 	r.KeyPathPrefix = m.KeyPathPrefix
 	r.Limit = m.Limit
-	r.SortProperty = m.SortProperty
 	r.SortDirection = m.SortDirection
 	if rhs := m.FilterConditions; rhs != nil {
 		tmpContainer := make([]*FilterCondition, len(rhs))
@@ -904,9 +903,6 @@ func (this *TransactionBeginList) EqualVT(that *TransactionBeginList) bool {
 		return false
 	}
 	if this.Limit != that.Limit {
-		return false
-	}
-	if this.SortProperty != that.SortProperty {
 		return false
 	}
 	if this.SortDirection != that.SortDirection {
@@ -1777,11 +1773,6 @@ func (m *TransactionBeginList) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x20
 	}
-	if m.SortProperty != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SortProperty))
-		i--
-		dAtA[i] = 0x18
-	}
 	if m.Limit != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.Limit))
 		i--
@@ -2460,9 +2451,6 @@ func (m *TransactionBeginList) SizeVT() (n int) {
 	}
 	if m.Limit != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.Limit))
-	}
-	if m.SortProperty != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortProperty))
 	}
 	if m.SortDirection != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortDirection))
@@ -3559,25 +3547,6 @@ func (m *TransactionBeginList) UnmarshalVT(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.Limit |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SortProperty", wireType)
-			}
-			m.SortProperty = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SortProperty |= SortableProperty(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

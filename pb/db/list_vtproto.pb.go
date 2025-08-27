@@ -28,7 +28,6 @@ func (m *BeginListRequest) CloneVT() *BeginListRequest {
 	r.KeyPathPrefix = m.KeyPathPrefix
 	r.Limit = m.Limit
 	r.AllowStale = m.AllowStale
-	r.SortProperty = m.SortProperty
 	r.SortDirection = m.SortDirection
 	r.SchemaVersionId = m.SchemaVersionId
 	r.SchemaId = m.SchemaId
@@ -170,9 +169,6 @@ func (this *BeginListRequest) EqualVT(that *BeginListRequest) bool {
 		return false
 	}
 	if this.AllowStale != that.AllowStale {
-		return false
-	}
-	if this.SortProperty != that.SortProperty {
 		return false
 	}
 	if this.SortDirection != that.SortDirection {
@@ -449,11 +445,6 @@ func (m *BeginListRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x30
 	}
-	if m.SortProperty != 0 {
-		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.SortProperty))
-		i--
-		dAtA[i] = 0x28
-	}
 	if m.AllowStale {
 		i--
 		if m.AllowStale {
@@ -716,9 +707,6 @@ func (m *BeginListRequest) SizeVT() (n int) {
 	if m.AllowStale {
 		n += 2
 	}
-	if m.SortProperty != 0 {
-		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortProperty))
-	}
 	if m.SortDirection != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.SortDirection))
 	}
@@ -947,25 +935,6 @@ func (m *BeginListRequest) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.AllowStale = bool(v != 0)
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SortProperty", wireType)
-			}
-			m.SortProperty = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protohelpers.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SortProperty |= SortableProperty(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SortDirection", wireType)

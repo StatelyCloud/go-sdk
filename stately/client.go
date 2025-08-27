@@ -26,33 +26,29 @@ type Client interface {
 	// create a lightweight copy of the client where reads can show stale data.
 	WithAllowStale(allowStale bool) Client
 
-	// GetBatch retrieves up to 50 Items by their key paths. This will return any
-	// of the Items that exist. It will fail if the caller does not have
-	// permission to read Items. Use BeginList if you want to retrieve multiple
+	// GetBatch retrieves multiple items by their full key paths. This will return
+	// any of the Items that exist. Use BeginList if you want to retrieve multiple
 	// items but don't already know the full key paths of the items you want to
-	// get. Use Get if you want to retrieve a single item.
+	// get. You can get items of different types in a single getBatch but you will
+	// need to use a type switch to determine what item type each item is.
 	//
 	// Example:
 	//  items, err := client.GetBatch(ctx, "/movies-123", "/movies-456")
 	GetBatch(ctx context.Context, itemPaths ...string) ([]Item, error)
 
 	// Get retrieves one Item by its full key path, or nil if no item exists at
-	// that path. It will fail if the caller does not have permission to read
-	// Items. Use BeginList if you want to retrieve multiple items but don't
-	// already know the full key paths of the items you want to get. Use GetBatch
-	// if you want to retrieve multiple items by their full key paths.
+	// that path.
 	//
 	// Example:
 	//  item, err := client.Get(ctx, "/movies-123")
 	Get(ctx context.Context, itemPath string) (Item, error)
 
-	// PutBatch adds up to 50 Items to the Store, or replaces the Items if they
+	// PutBatch adds multiple Items to the Store, or replaces Items if they
 	// already exist at that path. Each item may optionally be wrapped in an
 	// WithPutOptions to specify additional per-item options. All puts in the
 	// request are applied atomically - there are no partial successes.
 	//
 	// This will fail if:
-	//   - The caller does not have permission to create Items.
 	//   - Any Item conflicts with an existing Item at the same path and its
 	//     MustNotExist option is set, or the item's ID will be chosen with an
 	//     `initialValue` and one of its other key paths conflicts with an existing
@@ -68,7 +64,6 @@ type Client interface {
 	// to specify additional per-item options.
 	//
 	// This call will fail if:
-	//   - The caller does not have permission to create Items.
 	//   - The Item conflicts with an existing Item at the same path and the
 	//     MustNotExist option is set, or the item's ID will be chosen with an
 	//     `initialValue` and one of its other key paths conflicts with an existing
@@ -79,8 +74,8 @@ type Client interface {
 	//  item, err := client.Put(ctx, stately.WithPutOptions{Item: item, MustNotExist:true})
 	Put(ctx context.Context, item Item) (Item, error)
 
-	// Delete removes up to 50 Items from the Store by their key paths. This will
-	// fail if the caller does not have permission to delete Items. Tombstones
+	// Delete removes one or more items from the Store by their full key paths.
+	// Delete succeeds even if there isn't an item at that key path. Tombstones
 	// will be saved for deleted items for some time, so that SyncList can return
 	// information about deleted items. Deletes are always applied atomically; all
 	// will fail or all will succeed.
@@ -89,17 +84,22 @@ type Client interface {
 	//  err := client.Delete(ctx, "/movies-123", "/movies-456")
 	Delete(ctx context.Context, itemPaths ...string) error
 
-	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must at least contain a Group Key (a single key segment
-	// with a namespace and an ID). BeginList will return an empty result set if
-	// there are no items matching that key prefix. This API returns a token that
-	// you can pass to ContinueList to expand the result set, or to SyncList to
-	// get updates within the result set. This can fail if the caller does not
-	// have permission to read Items.
+	// BeginList retrieves Items that start with a specified keyPathPrefix from a
+	// single Group. Because it can only list items from a single Group, the key
+	// path prefix must at least start with a full Group Key (a single key segment
+	// with a namespace and an ID, e.g. `/user-1234`).
+	//
+	// BeginList will return an empty result set if there are no items matching
+	// that key prefix. This API returns a token that you can pass to ContinueList
+	// to expand the result set, or to SyncList to get updates within the result
+	// set.
 	//
 	// The options parameter is optional and can be used to limit the number of
 	// results in a page, change the sort order, etc. If you provide multiple
 	// options objects, the last one will take precedence.
+	//
+	// You can list items of different types in a single BeginList, and you can
+	// use a type switch to handle different item types.
 	//
 	// Example:
 	//   iter, err := client.BeginList(ctx, "/movies-movieID", stately.ListOptions{Limit: 10})
@@ -113,7 +113,8 @@ type Client interface {
 
 	// ContinueList takes the token from a BeginList call and returns the next
 	// "page" of results based on the original query parameters and pagination
-	// options. It will return a new token which can be used for another
+	// options. It doesn't have options because it is a continuation of a previous
+	// list operation. It will return a new token which can be used for another
 	// ContinueList call, and so on. The token is the same one used by SyncList -
 	// each time you call either ContinueList or SyncList, you should pass the
 	// latest version of the token, and then use the new token from the result in
@@ -122,6 +123,9 @@ type Client interface {
 	// parallel. Calls to ContinueList are tied to the authorization of the
 	// original BeginList call, so if the original BeginList call was allowed,
 	// ContinueList with its token should also be allowed.
+	//
+	// You can list items of different types in a single ContinueList, and you can
+	// use a type switch to handle different item types.
 	//
 	// Example:
 	//   iter, err := client.ContinueList(ctx, token.Data)
@@ -142,8 +146,10 @@ type Client interface {
 	// parallel segmented scans. If you provide multiple options objects, the last
 	// one will take precedence.
 	//
-	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
-	// OF ITEMS.
+	// You can list items of different types in a single BeginScan, and you can
+	// use a type switch to handle different item types.
+	//
+	// WARNING: THIS API CAN BE EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
 	//
 	// Example:
 	//   iter, err := client.BeginScan(ctx, stately.ScanOptions{Limit: 10, ItemTypes: []string{"Movie"}})
@@ -158,14 +164,16 @@ type Client interface {
 	// ContinueScan takes the token from a BeginScan call and returns the next
 	// "page" of results based on the original scan parameters and pagination
 	// options. It will return a new token which can be used for another
-	// ContinueScan call, and so on. Each time you call ContinueScan, you
-	// should pass the latest version of the token, and then use the new token
-	// from the result in subsequent calls. Calls to ContinueScan are tied to the
+	// ContinueScan call, and so on. Each time you call ContinueScan, you should
+	// pass the latest version of the token, and then use the new token from the
+	// result in subsequent calls. Calls to ContinueScan are tied to the
 	// authorization of the original BeginScan call, so if the original BeginScan
 	// call was allowed, ContinueScan with its token should also be allowed.
 	//
-	// WARNING: THIS API CAN BE EXTREMELY EXPENSIVE FOR STORES WITH A LARGE NUMBER
-	// OF ITEMS.
+	// You can list items of different types in a single ContinueScan, and you can
+	// use a type switch to handle different item types.
+	//
+	// WARNING: THIS API CAN BE EXPENSIVE FOR STORES WITH A LARGE NUMBER OF ITEMS.
 	//
 	// Example:
 	//   iter, err := client.ContinueScan(ctx, token.Data)
@@ -177,15 +185,27 @@ type Client interface {
 	//   token, err := iter.Token() // Save this for ContinueScan
 	ContinueScan(ctx context.Context, token []byte) (ListResponse[Item], error)
 
-	// NewTransaction starts a new transaction on a stream, and calls the handler
-	// with a Transaction object. The handler can then interact with the
-	// transaction by calling APIs like Get, Put, Delete, and BeginList. The
-	// transaction is committed when the handler returns without an error, and the
-	// results are returned. Reads are guaranteed to reflect the state as of when
-	// the transaction started, and writes are committed atomically. This method
-	// may fail with a "ConcurrentModification" error code if another transaction
-	// commits before this one finishes - in that case, you should retry your
-	// transaction.
+	// NewTransaction allows you to issue reads and writes in any order, and all
+	// writes will either succeed or all will fail when the transaction finishes.
+	// You pass it a function with a single parameter, the transaction handler,
+	// which lets you perform operations within the transaction.
+	//
+	// Reads are guaranteed to reflect the state as of when the transaction
+	// started. A transaction may fail if another transaction commits before this
+	// one finishes - in that case, you should retry your transaction.
+	//
+	// If any error is returned from the handler function, the transaction is
+	// aborted and none of the changes made in it will be applied. If the handler
+	// returns without error, the transaction is automatically committed.
+	//
+	// If any of the operations in the handler function fails (e.g. a request is
+	// invalid) you may not find out until the *next* operation, or once the block
+	// finishes, due to some technicalities about how requests are handled.
+	//
+	// When the transaction is committed, the result property will contain the
+	// full version of any items that were put in the transaction, and the
+	// committed property will be True. If the transaction was aborted, the
+	// committed property will be False.
 	//
 	// Example:
 	//  results, err := client.NewTransaction(ctx, func(txn stately.Transaction) error {
@@ -203,21 +223,36 @@ type Client interface {
 
 	// SyncList returns all changes to Items within the result set of a previous
 	// List operation. For all Items within the result set that were modified, it
-	// returns the full Item at in its current state. It also returns a list of
-	// Item key paths that were deleted since the last SyncList, which you should
-	// reconcile with your view of items returned from previous
-	// BeginList/ContinueList calls. Using this API, you can start with an initial
-	// set of items from BeginList, and then stay up to date on any changes via
-	// repeated SyncList requests over time. The token is the same one used by
-	// ContinueList - each time you call either ContinueList or SyncList, you
-	// should pass the latest version of the token, and then use the new token
-	// from the result in subsequent calls. Note that if the result set has
+	// returns the full Item at in its current state. If the result set has
 	// already been expanded to the end (in the direction of the original
-	// BeginList request), SyncList will return newly created Items. You may
+	// BeginList request), SyncList will return newly created Items as well. It
+	// also returns a list of Item key paths that were deleted since the last
+	// SyncList, which you should reconcile with your view of items returned from
+	// previous BeginList/ContinueList calls. Using this API, you can start with
+	// an initial set of items from beginList, and then stay up to date on any
+	// changes via repeated SyncList requests over time.
+	//
+	// The token is the same one used by ContinueList - each time you call either
+	// ContinueList or SyncList, you should pass the latest version of the token,
+	// and then use the new token from the result in subsequent calls. You may
 	// interleave ContinueList and SyncList calls however you like, but it does
 	// not make sense to make both calls in parallel. Calls to SyncList are tied
 	// to the authorization of the original BeginList call, so if the original
-	// BeginList call was allowed, SyncList with its token should also be allowed.
+	// beginList call was allowed, SyncList with its token should also be allowed.
+	//
+	// Each result will be one of the following types:
+	//     - *stately.Changed: An item that was changed or added since the last
+	//       SyncList call.
+	//     - *stately.Deleted: The key path of an item that was deleted since
+	//       the last SyncList call.
+	//     - *stately.UpdateOutsideOfWindow: An item that was updated but
+	//       is not within the current result set. You can treat this like
+	//       stately.Deleted, but the item hasn't actually been deleted, it's
+	//       just not part of your view of the list anymore.
+	//     - *stately.Reset: A reset signal that indicates any previously cached
+	//       view of the result set is no longer valid. You should throw away
+	//       any locally cached data. This will always be followed by a series
+	//       of *stately.Changed messages that make up a new view of the result set.
 	//
 	// Example:
 	//
@@ -265,10 +300,12 @@ type Transaction interface {
 	//  item, err := txn.Get("/movies-123")
 	Get(item string) (Item, error)
 
-	// GetBatch retrieves up to 50 Items by their key paths. This will return any
-	// of the Items that exist. Use BeginList if you want to retrieve multiple
+	// GetBatch retrieves multiple items by their full key paths. This will return
+	// any of the Items that exist. Use BeginList if you want to retrieve multiple
 	// items but don't already know the full key paths of the items you want to
-	// get. Use Get if you want to retrieve a single item.
+	// get. Use Get if you want to retrieve a single item. You can get items of
+	// different types in a single GetBatch - you will need to use a type switch
+	// to determine what item type each item is.
 	//
 	// Example:
 	//  items, err := client.GetBatch("/movies-123", "/movies-456")
@@ -294,7 +331,7 @@ type Transaction interface {
 	//  genID, err := txn.Put(stately.WithPutOptions{Item: item, MustNotExist:true})
 	Put(item Item) (GeneratedID, error)
 
-	// PutBatch adds up to 50 Items to the Store, or replaces the Items if they
+	// PutBatch adds multiple Items to the Store, or replaces the Items if they
 	// already exist at that path. Each item may optionally be wrapped in an
 	// WithPutOptions to specify additional per-item options.
 	//
@@ -314,20 +351,21 @@ type Transaction interface {
 	//  genIDs, err := txn.PutBatch(item, stately.WithPutOptions{Item: item2, MustNotExist:true})
 	PutBatch(items ...Item) ([]GeneratedID, error)
 
-	// Delete removes up to 50 Items from the Store by their key paths. Tombstones
-	// will be saved for deleted items for some time, so that SyncList can return
-	// information about deleted items.
+	// Delete removes multiple Items from the Store by their key paths. Delete
+	// succeeds even if there isn't an item at that key path.
 	//
 	// Example:
 	//  err := txn.Delete("/movies-123", "/movies-456")
 	Delete(itemKeys ...string) error
 
-	// BeginList retrieves Items that start with a specified key path prefix. The
-	// key path prefix must at least contain a Group Key (a single key segment
-	// with a namespace and an ID). BeginList will return an empty result set if
-	// there are no items matching that key prefix. This API returns a token that
-	// you can pass to ContinueList to expand the result set, or to SyncList to
-	// get updates within the result set.
+	// BeginList retrieves Items that start with a specified keyPathPrefix from a
+	// single Group. Because it can only list items from a single Group, the key
+	// path prefix must at least start with a full Group Key (a single key segment
+	// with a namespace and an ID, e.g. `/user-1234`).
+	//
+	// BeginList will return an empty result set if there are no items matching
+	// that key prefix. This API returns a token that you can pass to ContinueList
+	// to expand the result set.
 	//
 	// The options parameter is optional and can be used to limit the number of
 	// results in a page, change the sort order, etc. If you provide multiple

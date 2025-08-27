@@ -122,7 +122,6 @@ func (t *transaction) BeginList(prefix string, options ...ListOptions) (ListResp
 		BeginList: &db.TransactionBeginList{
 			KeyPathPrefix:    prefix,
 			Limit:            opts.Limit,
-			SortProperty:     db.SortableProperty(opts.SortableProperty),
 			SortDirection:    db.SortDirection(opts.SortDirection),
 			FilterConditions: opts.filters(),
 			KeyConditions:    keyConditions,

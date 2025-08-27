@@ -17,9 +17,6 @@ type ListOptions struct {
 	// all items will be returned.
 	Limit uint32
 
-	// SortableProperty is the property to sort by. Default is SortByKeyPath.
-	SortableProperty SortableProperty
-
 	// SortDirection is the direction to sort by. Default is Ascending.
 	SortDirection SortDirection
 
@@ -117,12 +114,6 @@ func (lo ListOptions) WithLimit(limit uint32) ListOptions {
 	return lo
 }
 
-// WithSortableProperty sets the property to sort by in the ListOptions.
-func (lo ListOptions) WithSortableProperty(sortable SortableProperty) ListOptions {
-	lo.SortableProperty = sortable
-	return lo
-}
-
 // WithSortDirection sets the direction to sort by in the ListOptions.
 func (lo ListOptions) WithSortDirection(direction SortDirection) ListOptions {
 	lo.SortDirection = direction
@@ -139,7 +130,6 @@ func (lo *ListOptions) Merge(other *ListOptions) *ListOptions {
 		return other
 	}
 	lo.Limit = other.Limit
-	lo.SortableProperty = other.SortableProperty
 	lo.SortDirection = other.SortDirection
 	lo.ItemTypes = other.ItemTypes
 	lo.KeyConditions = other.KeyConditions
@@ -191,16 +181,6 @@ type ContinueOptions struct {
 	// SortDirection is the direction to sort by. Default is Ascending.
 	SortDirection SortDirection
 }
-
-// SortableProperty is the property to sort by.
-type SortableProperty int32
-
-const (
-	// SortByKeyPath sorts by the key path.
-	SortByKeyPath SortableProperty = iota
-	// SortByLastModifiedVersion sorts by the last time the item was modified.
-	SortByLastModifiedVersion
-)
 
 // SortDirection is the direction to sort by.
 type SortDirection int32
@@ -499,7 +479,6 @@ func (c *client) BeginList(
 		KeyPathPrefix:    keyPath,
 		AllowStale:       c.allowStale,
 		Limit:            options.Limit,
-		SortProperty:     db.SortableProperty(options.SortableProperty),
 		SortDirection:    db.SortDirection(options.SortDirection),
 		FilterConditions: options.filters(),
 		KeyConditions:    keyConditions,
