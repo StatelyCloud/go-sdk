@@ -137,28 +137,6 @@ func (lo *ListOptions) Merge(other *ListOptions) *ListOptions {
 	return lo
 }
 
-func (lo *ListOptions) filters() []*db.FilterCondition {
-	if len(lo.ItemTypes) == 0 && len(lo.CelExpressionFilters) == 0 {
-		return nil
-	}
-	filters := make([]*db.FilterCondition, len(lo.ItemTypes)+len(lo.CelExpressionFilters))
-	for i, itemType := range lo.ItemTypes {
-		filters[i] = &db.FilterCondition{
-			Value: &db.FilterCondition_ItemType{
-				ItemType: itemType,
-			},
-		}
-	}
-	for i, filter := range lo.CelExpressionFilters {
-		filters[len(lo.ItemTypes)+i] = &db.FilterCondition{
-			Value: &db.FilterCondition_CelExpression{
-				CelExpression: filter.toProto(),
-			},
-		}
-	}
-	return filters
-}
-
 func (lo *ListOptions) keyConditions() ([]*db.KeyCondition, error) {
 	if len(lo.KeyConditions) == 0 {
 		return nil, nil
@@ -480,7 +458,7 @@ func (c *client) BeginList(
 		AllowStale:       c.allowStale,
 		Limit:            options.Limit,
 		SortDirection:    db.SortDirection(options.SortDirection),
-		FilterConditions: options.filters(),
+		FilterConditions: buildFilters(options.ItemTypes, options.CelExpressionFilters),
 		KeyConditions:    keyConditions,
 	}))
 	if err != nil {
@@ -503,4 +481,26 @@ func newStream(response *connect.ServerStreamForClient[db.ListResponse]) *stream
 		return canContinue
 	}
 	return newStream
+}
+
+func buildFilters(itemTypes []string, celExpressionFilters []CelExpressionFilter) []*db.FilterCondition {
+	if len(itemTypes) == 0 && len(celExpressionFilters) == 0 {
+		return nil
+	}
+	result := make([]*db.FilterCondition, len(itemTypes)+len(celExpressionFilters))
+	for i, itemType := range itemTypes {
+		result[i] = &db.FilterCondition{
+			Value: &db.FilterCondition_ItemType{
+				ItemType: itemType,
+			},
+		}
+	}
+	for i, filter := range celExpressionFilters {
+		result[len(itemTypes)+i] = &db.FilterCondition{
+			Value: &db.FilterCondition_CelExpression{
+				CelExpression: filter.toProto(),
+			},
+		}
+	}
+	return result
 }

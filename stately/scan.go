@@ -21,6 +21,13 @@ type ScanOptions struct {
 	// types will be returned.
 	ItemTypes []string
 
+	// CelExpressionFilters are CEL expression filters to apply to the result set.
+	// Each expression is evaluated on an item type basis, so you can have multiple
+	// expressions for different item types, and the existence of a filter for one
+	// item type does not mean that other item types are excluded from the result set.
+	// To ensure that ONLY specific item types are returned, use the ItemTypes field above.
+	CelExpressionFilters []CelExpressionFilter
+
 	// TotalSegments is the total number of segments to divide the scan into.
 	// If this is provided, then segmentation will be enabled for the scan
 	// and this scan will only return items from the segment specified by
@@ -47,6 +54,22 @@ func (lo *ScanOptions) Merge(other *ScanOptions) *ScanOptions {
 	lo.ItemTypes = other.ItemTypes
 	lo.TotalSegments = other.TotalSegments
 	lo.SegmentIndex = other.SegmentIndex
+	lo.CelExpressionFilters = other.CelExpressionFilters
+	return lo
+}
+
+// WithItemTypesToInclude adds ItemType filters to the ScanOptions.
+func (lo ScanOptions) WithItemTypesToInclude(itemTypes ...string) ScanOptions {
+	lo.ItemTypes = append(lo.ItemTypes, itemTypes...)
+	return lo
+}
+
+// WithCelExpressionFilter adds a CEL expression filter to the ScanOptions.
+func (lo ScanOptions) WithCelExpressionFilter(itemType, expression string) ScanOptions {
+	lo.CelExpressionFilters = append(lo.CelExpressionFilters, CelExpressionFilter{
+		ItemType:   itemType,
+		Expression: expression,
+	})
 	return lo
 }
 
@@ -59,14 +82,6 @@ func (c *client) BeginScan(
 		options = options.Merge(&opt)
 	}
 
-	filterConditions := make([]*db.FilterCondition, len(options.ItemTypes))
-	for i, itemType := range options.ItemTypes {
-		filterConditions[i] = &db.FilterCondition{
-			Value: &db.FilterCondition_ItemType{
-				ItemType: itemType,
-			},
-		}
-	}
 	var segmentationParams *db.SegmentationParams
 	if options.TotalSegments > 0 {
 		segmentationParams = &db.SegmentationParams{
@@ -79,7 +94,7 @@ func (c *client) BeginScan(
 		StoreId:            uint64(c.storeID),
 		SegmentationParams: segmentationParams,
 		SchemaVersionId:    uint32(c.schemaVersionID),
-		FilterConditions:   filterConditions,
+		FilterConditions:   buildFilters(options.ItemTypes, options.CelExpressionFilters),
 		Limit:              options.Limit,
 	}))
 	if err != nil {

@@ -217,7 +217,7 @@ func (o *Options) HTTPClient() *http.Client {
 	if o.NoAdmin {
 		httpClient = wrapRoundTripperFunc(httpClient,
 			func(req *http.Request, next http.RoundTripper) (*http.Response, error) {
-				req.Header.Set("X-Stately-NoAdmin", "1")
+				req.Header.Set(NoAdminHeader, "1")
 				return next.RoundTrip(req)
 			})
 	}

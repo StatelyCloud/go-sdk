@@ -10,11 +10,11 @@ require (
 	connectrpc.com/connect v1.18.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25
-	github.com/stretchr/testify v1.10.0
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6
+	github.com/stretchr/testify v1.11.1
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
-	google.golang.org/protobuf v1.36.7
+	google.golang.org/protobuf v1.36.8
 )
 
 require (
