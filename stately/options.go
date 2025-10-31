@@ -260,21 +260,33 @@ func (m *httpAuthMiddleware) RoundTripper(req *http.Request, next http.RoundTrip
 
 	// If the RPC failed due to auth, force refresh the access token and retry once.
 	if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+		// fetch a new token regardless of whether the request is retriable or not
+		// since we want to make sure we have a valid token for the next request.
 		token, err = m.getToken(req.Context(), true /*force*/)
 		if err != nil {
 			return nil, err
 		}
-		// We need to reset the body or we'll get "request declared a Content-Length
-		// of 57 but only wrote 0 bytes" on requests with a body.
+		// In some cases we need to reset the body or we'll get "request declared a
+		// Content-Length of 57 but only wrote 0 bytes" on requests with a body.
 		if rewinder, ok := req.Body.(rewindable); ok {
-			if rewinder.Rewind() {
-				// Redrive the request with the new token
-				req.Header.Set("Authorization", "Bearer "+token)
-				resp, err = next.RoundTrip(req)
+			// if we can rewind then try and do that
+			if !rewinder.Rewind() {
+				return resp, err
 			}
-
-			// If we can't rewind the body, just return the original error. Sad.
+			// rewind successful
+		} else if req.Body == nil {
+			// request has no body so we can retry. It's probably a get request
+		} else if req.GetBody != nil {
+			// request has a GetBody() func so it is also safe to retry
+			// since the http client will create a new body every time it is executed.
+		} else {
+			// cannot be retried
+			return resp, err
 		}
+
+		// Redrive the request with the new token
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err = next.RoundTrip(req)
 	}
 
 	return resp, err
